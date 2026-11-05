@@ -1,0 +1,59 @@
+<div class="page-wrapper">
+  @if (taskRepeatCfgs$ | async; as taskRepeatCfgs) {
+    <section
+      class="component-wrapper"
+      style="margin-top: 24px"
+    >
+      @if (!taskRepeatCfgs?.length) {
+        <p class="no-scheduled-tasks">{{ T.SCHEDULE.NO_REPEATABLE_TASKS | translate }}</p>
+      }
+      <div
+        [@standardList]="$safeNavigationMigration(taskRepeatCfgs?.length)"
+        class="repeat-task-cfgs"
+      >
+        @for (taskRepeatCfg of taskRepeatCfgs; track taskRepeatCfg.id) {
+          <mat-card
+            appearance="outlined"
+            class="repeat-task-cfg"
+          >
+            <mat-card-content>
+              <div class="repeat-task-cfg-content">
+                <div class="task-info">
+                  <div class="title">
+                    <task-title
+                      (valueEdited)="
+                        updateRepeatableTitleIfChanged(
+                          $event.wasChanged,
+                          $event.newVal,
+                          taskRepeatCfg
+                        )
+                      "
+                      [value]="taskRepeatCfg.title"
+                      class="task-title"
+                    ></task-title>
+                    <tag-list
+                      [isShowProjectTagAlways]="true"
+                      [task]="taskRepeatCfg"
+                    ></tag-list>
+                  </div>
+
+                  <div
+                    (click)="editTaskRepeatCfg(taskRepeatCfg)"
+                    class="repeat-text-and-icon"
+                    [matTooltip]="getTooltipText(taskRepeatCfg)"
+                    mat-ripple
+                  >
+                    <div class="repeat-text">{{ getRepeatInfoText(taskRepeatCfg) }}</div>
+                    <mat-icon>repeat</mat-icon>
+                  </div>
+                </div>
+              </div>
+            </mat-card-content>
+          </mat-card>
+        }
+      </div>
+    </section>
+  } @else {
+    <full-page-spinner></full-page-spinner>
+  }
+</div>

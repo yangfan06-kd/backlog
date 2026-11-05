@@ -1,0 +1,67 @@
+:host {
+  display: block;
+  padding: var(--s3);
+}
+
+.pabout-page {
+  max-width: 900px;
+  margin: 0 auto;
+  color: var(--text-color);
+}
+
+.pabout-header {
+  margin-bottom: var(--s2);
+
+  h1 {
+    margin: 0 0 var(--s-half);
+    font-size: var(--font-size-2xl);
+    font-weight: var(--font-weight-semibold);
+  }
+}
+
+.pabout-version {
+  margin: 0;
+  color: var(--text-color-muted);
+  font-size: var(--font-size-sm);
+}
+
+.pabout-card {
+  margin-bottom: var(--s2);
+  padding: var(--s2);
+  border: 1px solid var(--separator-color);
+  border-radius: var(--radius-sm);
+  background: var(--card-bg);
+
+  h2 {
+    margin: 0 0 var(--s-half);
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-semibold);
+  }
+
+  p {
+    margin: 0 0 var(--s-half);
+    color: var(--text-color-muted);
+    font-size: var(--font-size-sm);
+    line-height: 1.5;
+  }
+
+  ul {
+    margin: 0;
+    padding-left: var(--s2);
+    color: var(--text-color-muted);
+    font-size: var(--font-size-sm);
+    line-height: 1.8;
+  }
+}
+
+.pabout-path {
+  overflow-wrap: anywhere;
+  font-family: monospace;
+  color: var(--text-color) !important;
+}
+
+@media (max-width: 700px) {
+  :host {
+    padding: var(--s2);
+  }
+}

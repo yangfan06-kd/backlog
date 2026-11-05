@@ -1,0 +1,490 @@
+<div
+  class="pr-page"
+  data-testid="pr-page"
+>
+  <header class="pr-head">
+    <div class="pr-heading">
+      <h1>{{ 'PERSONAL_ROUTINE.TITLE' | translate }}</h1>
+    </div>
+    <div
+      class="pr-ranges"
+      role="group"
+      [attr.aria-label]="'PERSONAL_ROUTINE.RANGE.LABEL' | translate"
+    >
+      <button
+        type="button"
+        class="pr-range-button"
+        data-testid="pr-range-week"
+        [class.is-active]="range() === 'week'"
+        [attr.aria-pressed]="range() === 'week'"
+        (click)="changeRange('week')"
+      >
+        {{ 'PERSONAL_ROUTINE.RANGE.WEEK' | translate }}
+      </button>
+      <button
+        type="button"
+        class="pr-range-button"
+        data-testid="pr-range-month"
+        [class.is-active]="range() === 'month'"
+        [attr.aria-pressed]="range() === 'month'"
+        (click)="changeRange('month')"
+      >
+        {{ 'PERSONAL_ROUTINE.RANGE.MONTH' | translate }}
+      </button>
+      <button
+        type="button"
+        class="pr-range-button"
+        data-testid="pr-range-three-months"
+        [class.is-active]="range() === 'threeMonths'"
+        [attr.aria-pressed]="range() === 'threeMonths'"
+        (click)="changeRange('threeMonths')"
+      >
+        {{ 'PERSONAL_ROUTINE.RANGE.THREE_MONTHS' | translate }}
+      </button>
+    </div>
+  </header>
+  @if (archiveReadError()) {
+    <p
+      class="pr-notice"
+      role="alert"
+      data-testid="pr-archive-read-error"
+    >
+      部分历史记录未能读取。<button
+        type="button"
+        (click)="refreshArchivedRecords()"
+      >
+        重试
+      </button>
+    </p>
+  }
+
+  <span
+    class="pr-status pr-page-status"
+    data-testid="pr-status"
+    [attr.data-save-state]="saveState().kind"
+    role="status"
+    aria-live="polite"
+  >
+    @if (saveState().kind !== 'ready' && saveState().kind !== 'idle') {
+      {{ saveStateText() | translate }}
+    }
+  </span>
+
+  <section
+    class="pr-new-item"
+    data-testid="pr-new-item"
+  >
+    <h2>{{ 'PERSONAL_ROUTINE.NEW_ITEM.TITLE' | translate }}</h2>
+    <div class="pr-new-item-row">
+      <label class="pr-field">
+        <span>{{ 'PERSONAL_ROUTINE.NEW_ITEM.NAME' | translate }}</span>
+        <input
+          type="text"
+          data-testid="pr-new-item-title"
+          [ngModel]="newItemTitle()"
+          (ngModelChange)="newItemTitle.set($event)"
+          [disabled]="isSaving() || entryDraftDirty()"
+          [placeholder]="'PERSONAL_ROUTINE.NEW_ITEM.PLACEHOLDER' | translate"
+        />
+      </label>
+      <button
+        type="button"
+        class="pr-primary"
+        data-testid="pr-create-item"
+        [disabled]="isSaving() || !newItemTitle().trim() || entryDraftDirty()"
+        (click)="createItem()"
+      >
+        {{ 'PERSONAL_ROUTINE.NEW_ITEM.CREATE' | translate }}
+      </button>
+    </div>
+  </section>
+
+  <div class="pr-toolbar">
+    <span
+      class="pr-range-label"
+      data-testid="pr-range-label"
+      >{{ rangeLabel() }}</span
+    >
+    <button
+      type="button"
+      class="pr-action"
+      data-testid="pr-backfill"
+      cdkOverlayOrigin
+      #backfillOrigin="cdkOverlayOrigin"
+      [disabled]="isSaving() || view().rows.length === 0"
+      (click)="backfill(backfillOrigin)"
+    >
+      {{ 'PERSONAL_ROUTINE.BACKFILL' | translate }}
+    </button>
+  </div>
+
+  @if (targetNotice()) {
+    <p
+      class="pr-notice"
+      data-testid="pr-target-notice"
+    >
+      {{ targetNotice() | translate }}
+    </p>
+  }
+
+  @if (view().rows.length === 0) {
+    <section
+      class="pr-empty"
+      data-testid="pr-empty"
+    >
+      <h2>{{ 'PERSONAL_ROUTINE.EMPTY.TITLE' | translate }}</h2>
+    </section>
+  }
+
+  @if (view().rows.length > 0) {
+    <section
+      class="pr-table-wrap"
+      cdkScrollable
+      data-testid="pr-table-scroll"
+      tabindex="0"
+      [attr.aria-label]="'PERSONAL_ROUTINE.TABLE_LABEL' | translate"
+    >
+      <table
+        class="pr-table"
+        data-testid="pr-table"
+        [style.--pr-date-count]="historyDates().length"
+      >
+        <colgroup>
+          <col class="pr-col-item" />
+          @for (day of historyDates(); track day) {
+            <col class="pr-col-day" />
+          }
+          <col class="pr-col-today" />
+        </colgroup>
+        <thead>
+          <tr>
+            <th
+              scope="col"
+              class="pr-item-column"
+            >
+              {{ 'PERSONAL_ROUTINE.ITEM' | translate }}
+            </th>
+            @for (day of historyDates(); track day) {
+              <th
+                scope="col"
+                class="pr-date-column"
+                [attr.data-record-day]="day"
+                [attr.data-testid]="'pr-date-' + day"
+              >
+                <span class="pr-date-label">{{ displayDay(day) }}</span>
+              </th>
+            }
+            <th
+              scope="col"
+              class="pr-date-column pr-today-column is-today"
+              [attr.data-record-day]="today()"
+              [attr.data-testid]="'pr-date-' + today()"
+            >
+              <span class="pr-today-label">{{
+                'PERSONAL_ROUTINE.TODAY' | translate
+              }}</span>
+              <span class="pr-date-label">{{ displayDay(today()) }}</span>
+            </th>
+          </tr>
+        </thead>
+        <tbody
+          cdkDropList
+          [cdkDropListData]="view().rows"
+          [cdkDropListDisabled]="isSaving() || !!editorOrigin() || draftDirty()"
+          (cdkDropListDropped)="dropRows($event)"
+        >
+          @for (row of view().rows; track row.project.id) {
+            <tr
+              data-testid="pr-item-row"
+              [attr.data-item-id]="row.project.id"
+              [class.is-selected]="isSelected(row)"
+              cdkDrag
+              [cdkDragData]="row"
+              [cdkDragStartDelay]="{ mouse: 0, touch: 320 }"
+              cdkDragLockAxis="y"
+            >
+              <ng-template cdkDragPreview
+                ><div class="project1-row-preview">
+                  {{ row.project.title }}
+                </div></ng-template
+              >
+              <th
+                scope="row"
+                class="pr-item-cell"
+              >
+                <button
+                  type="button"
+                  class="pr-item-name"
+                  data-testid="pr-item-name"
+                  cdkDragHandle
+                  [attr.data-item-id]="row.project.id"
+                  (click)="selectItem(row.project.id)"
+                  (keydown.alt.arrowup)="moveRow($event, row, -1)"
+                  (keydown.alt.arrowdown)="moveRow($event, row, 1)"
+                >
+                  {{ row.project.title }}
+                </button>
+                <personal-project-tools
+                  [allowConversion]="true"
+                  [project]="row.project"
+                  [disabled]="isSaving()"
+                  (renamed)="renameItem($event)"
+                  (conversionRequested)="convertItem(row.project)"
+                  (trashConfirmed)="trashItem(row.project)"
+                />
+              </th>
+              @for (day of view().dates; track day) {
+                <td
+                  class="pr-cell"
+                  [class.pr-today-cell]="day === today()"
+                  [class.pr-date-cell]="day !== today()"
+                  [class.is-today]="day === today()"
+                  data-testid="pr-cell"
+                  [attr.data-item-id]="row.project.id"
+                  [attr.data-record-day]="day"
+                  [class.is-selected]="isSelected(row) && selectedDay() === day"
+                  cdkOverlayOrigin
+                  #cellOrigin="cdkOverlayOrigin"
+                  cdkDropList
+                  [cdkDropListData]="entriesFor(row, day)"
+                  [cdkDropListDisabled]="isSaving() || !!editorOrigin() || draftDirty()"
+                  (cdkDropListDropped)="dropRecords($event, row, day)"
+                  tabindex="0"
+                  (click)="selectDay(row.project.id, day)"
+                  (dblclick)="openCell(row, day, cellOrigin, $event)"
+                  (keydown.enter)="openCell(row, day, cellOrigin, $event)"
+                >
+                  @for (entry of entriesFor(row, day); track entry.id) {
+                    <div
+                      class="pr-entry"
+                      data-testid="pr-entry"
+                      [attr.data-entry-id]="entry.id"
+                      cdkDrag
+                      [cdkDragData]="entry"
+                      [cdkDragStartDelay]="{ mouse: 0, touch: 320 }"
+                      cdkDragLockAxis="y"
+                    >
+                      <personal-text-view
+                        class="pr-entry-body"
+                        [text]="entry.body"
+                        [format]="entry.bodyFormat"
+                        cdkDragHandle
+                        tabindex="0"
+                        (dblclick)="editAt(entry, cellOrigin, $event)"
+                        (keydown.enter)="editAt(entry, cellOrigin, $event)"
+                        (keydown.alt.arrowup)="moveRecord($event, row, entry, -1)"
+                        (keydown.alt.arrowdown)="moveRecord($event, row, entry, 1)"
+                      />
+                    </div>
+                  }
+                  @if (day === today()) {
+                    <button
+                      type="button"
+                      class="pr-record-link"
+                      data-testid="pr-record"
+                      (click)="$event.stopPropagation(); openCell(row, day, cellOrigin)"
+                      [disabled]="isSaving()"
+                    >
+                      ＋ 记录
+                    </button>
+                  }
+                </td>
+              }
+            </tr>
+          }
+        </tbody>
+      </table>
+    </section>
+  }
+
+  @if (editorOrigin(); as origin) {
+    <ng-template
+      cdkConnectedOverlay
+      [cdkConnectedOverlayOrigin]="origin"
+      [cdkConnectedOverlayOpen]="!draftPrompt()"
+      [cdkConnectedOverlayPositions]="editorPositions"
+      [cdkConnectedOverlayViewportMargin]="8"
+      [cdkConnectedOverlayPush]="true"
+    >
+      <section
+        class="pr-editor pr-editor-panel pp-editor-panel"
+        role="dialog"
+        aria-label="编辑常态记录"
+        data-testid="pr-editor"
+      >
+        <div class="pr-editor-head">
+          <h2>
+            {{
+              selectedRow()
+                ? selectedRow()!.project.title
+                : ('PERSONAL_ROUTINE.NO_ITEM' | translate)
+            }}
+          </h2>
+        </div>
+
+        <div class="pr-editor-meta">
+          <label class="pr-field pr-date-field">
+            <span>{{ 'PERSONAL_ROUTINE.RECORD_DATE' | translate }}</span>
+            <input
+              type="date"
+              data-testid="pr-entry-day"
+              [value]="entryDay"
+              [max]="today()"
+              [disabled]="
+                isSaving() || !selectedRow() || newItemDraft() || !!editingEntryId()
+              "
+              (change)="onDayInput($event)"
+            />
+          </label>
+        </div>
+
+        @if (rangeNotice()) {
+          <p
+            class="pr-notice pr-range-notice"
+            data-testid="pr-range-notice"
+          >
+            {{ rangeNotice() | translate }}
+          </p>
+        }
+
+        @if (selectedDayEntries().length > 0 && !editingEntryId()) {
+          <div
+            class="pr-day-records"
+            data-testid="pr-day-records"
+          >
+            <h3>{{ 'PERSONAL_ROUTINE.DAY_RECORDS' | translate }}</h3>
+            @for (entry of selectedDayEntries(); track entry.id) {
+              <article
+                class="pr-day-entry"
+                data-testid="pr-day-entry"
+                [attr.data-entry-id]="entry.id"
+                [class.is-editing]="isEditingEntry(entry)"
+              >
+                <p data-testid="pr-day-entry-body">
+                  <personal-text-view
+                    [text]="entry.body"
+                    [format]="entry.bodyFormat"
+                  ></personal-text-view>
+                </p>
+                @if (canEditEntry(entry)) {
+                  <button
+                    type="button"
+                    class="pr-action"
+                    data-testid="pr-edit-entry"
+                    [disabled]="isSaving()"
+                    (click)="editEntry(entry)"
+                  >
+                    {{ 'PERSONAL_ROUTINE.EDIT_RECORD' | translate }}
+                  </button>
+                }
+              </article>
+            }
+          </div>
+        }
+
+        @if (
+          !historyEditing() && selectedDayEntries().length > 0 && isPast(selectedDay())
+        ) {
+          <p class="pr-hint">{{ 'PERSONAL_ROUTINE.HISTORY.LOCKED' | translate }}</p>
+        }
+
+        <div class="pr-field">
+          <span>{{ 'PERSONAL_ROUTINE.BODY' | translate }}</span>
+          <personal-rich-text-editor
+            testId="pr-entry-body"
+            [text]="entryBody()"
+            [format]="entryFormat()"
+            [disabled]="isSaving() || !selectedRow() || newItemDraft()"
+            [resetKey]="(selectedItemId() ?? '') + entryDay + (editingEntryId() ?? 'new')"
+            [wrapToolbar]="true"
+            [ariaLabel]="'PERSONAL_ROUTINE.BODY_PLACEHOLDER' | translate"
+            (valueChange)="onEntryChange($event)"
+          ></personal-rich-text-editor>
+        </div>
+
+        @if (saveStateError()) {
+          <p
+            class="pr-error"
+            data-testid="pr-save-error"
+          >
+            {{ saveStateError() }}
+          </p>
+        }
+
+        <div class="pr-editor-actions">
+          <button
+            type="button"
+            class="pr-primary"
+            data-testid="pr-save-entry"
+            [disabled]="
+              isSaving() || !selectedRow() || newItemDraft() || !entryBody().trim()
+            "
+            (click)="saveEntry()"
+          >
+            {{ 'PERSONAL_ROUTINE.SAVE_ENTRY' | translate }}
+          </button>
+          <button
+            type="button"
+            class="pr-action"
+            data-testid="pr-cancel-entry"
+            [disabled]="isSaving()"
+            (click)="cancelEntry()"
+          >
+            {{ 'PERSONAL_ROUTINE.CANCEL' | translate }}
+          </button>
+          @if (editingEntryId()) {
+            <span
+              class="pr-editing-hint"
+              data-testid="pr-editing-hint"
+              >{{ 'PERSONAL_ROUTINE.EDITING' | translate }}</span
+            >
+          }
+        </div>
+      </section>
+    </ng-template>
+  }
+
+  @if (draftPrompt(); as prompt) {
+    <div class="pr-dialog-backdrop">
+      <section
+        class="pr-dialog"
+        data-testid="pr-draft-prompt"
+        role="dialog"
+        aria-modal="true"
+        cdkTrapFocus
+        [cdkTrapFocusAutoCapture]="true"
+      >
+        <h2>{{ 'PERSONAL_ROUTINE.DRAFT.TITLE' | translate }}</h2>
+        <p>
+          {{ draftPromptMessage(prompt.mode) | translate }}
+        </p>
+        <div class="pr-dialog-actions">
+          <button
+            type="button"
+            class="pr-primary"
+            data-testid="pr-draft-save"
+            (click)="chooseDraftSave()"
+          >
+            {{ 'PERSONAL_ROUTINE.DRAFT.SAVE' | translate }}
+          </button>
+          <button
+            type="button"
+            class="pr-action"
+            data-testid="pr-draft-discard"
+            (click)="chooseDraftDiscard()"
+          >
+            {{ 'PERSONAL_ROUTINE.DRAFT.DISCARD' | translate }}
+          </button>
+          <button
+            type="button"
+            class="pr-action"
+            data-testid="pr-draft-continue"
+            (click)="chooseDraftContinue()"
+          >
+            {{ 'PERSONAL_ROUTINE.DRAFT.CONTINUE' | translate }}
+          </button>
+        </div>
+      </section>
+    </div>
+  }
+</div>

@@ -1,0 +1,72 @@
+// UI-015/016 shared shell/page primitives. Imported only by the personal
+// preview shell and the personal pages; not a global product font override.
+@mixin project1-preview-font {
+  font-family: var(--project1-font-stack);
+}
+
+@mixin project1-page-shell {
+  @include project1-preview-font;
+  padding: var(--project1-page-gutter);
+}
+
+@mixin project1-page-title {
+  margin: 0;
+  color: var(--text-color);
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-tight);
+  letter-spacing: 0.01em;
+}
+
+@mixin project1-focus-ring {
+  &:focus-visible {
+    outline: var(--focus-ring-width) solid var(--focus-ring-color);
+    outline-offset: var(--focus-ring-offset);
+  }
+}
+
+@mixin project1-control {
+  @include project1-preview-font;
+  @include project1-focus-ring;
+  min-height: 32px;
+  padding: 0 var(--s2);
+  border: 1px solid var(--separator-color);
+  border-radius: var(--radius-sm);
+  background: var(--card-bg);
+  color: var(--text-color);
+  cursor: pointer;
+  font: inherit;
+  font-size: var(--font-size-md);
+  line-height: 1.2;
+
+  transition:
+    background-color 160ms ease,
+    color 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+
+  &:hover:not(:disabled) {
+    border-color: color-mix(in srgb, var(--c-primary) 45%, var(--separator-color));
+    background: color-mix(in srgb, var(--c-primary) 6%, var(--card-bg));
+  }
+
+  &:disabled {
+    cursor: default;
+    opacity: 0.55;
+  }
+}
+
+@mixin project1-primary-control {
+  @include project1-control;
+  min-height: 36px;
+  border-color: var(--c-primary);
+  background: var(--c-primary);
+  color: var(--project1-primary-label);
+  font-weight: var(--font-weight-medium);
+
+  &:hover:not(:disabled) {
+    border-color: var(--c-primary);
+    background: color-mix(in srgb, var(--c-primary) 88%, var(--text-color));
+    color: var(--project1-primary-label);
+  }
+}

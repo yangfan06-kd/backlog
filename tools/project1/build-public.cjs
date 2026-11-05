@@ -1,0 +1,15 @@
+const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto'),{spawnSync}=require('node:child_process');
+const repo=path.resolve(__dirname,'../..'),root='G:/project1',version=process.argv[2],skip=process.argv.includes('--skip-build');
+if(!/^\d+\.\d+\.\d+(?:-(?:beta|rc)\.\d+)?$/.test(version||''))throw Error('Usage: build-public.cjs <version> [--skip-build]');
+for(const key of['TEMP','TMP','ELECTRON_CACHE','ELECTRON_BUILDER_CACHE','npm_config_cache'])if(!process.env[key]||!path.resolve(process.env[key]).startsWith(path.resolve(root)+path.sep))throw Error('Run Enter-ProjectEnvironment.ps1 first: '+key);
+const output=path.join(root,'output/releases/DS-020','public-'+version),log=path.join(root,'output/handoffs/CX-020','build-'+version+'.log');
+if(fs.existsSync(output))throw Error('Release exists; never overwrite an existing version');
+fs.mkdirSync(path.dirname(output),{recursive:true});fs.mkdirSync(path.dirname(log),{recursive:true});
+const npm=path.join(root,'.cache/npm/_npx/531a256430e91eb0/node_modules/npm/bin/npm-cli.js');
+const run=(args,extra={})=>{const r=spawnSync(process.execPath,args,{cwd:repo,encoding:'utf8',maxBuffer:64*1024*1024,env:{...process.env,...extra}});fs.appendFileSync(log,`${args.join(' ')}\n${r.stdout||''}\n${r.stderr||''}\n`);if(r.status!==0)throw Error('Build failed; see '+log);};
+if(!skip){run([npm,'run','buildFrontend:prod:es6']);run([npm,'run','electron:build']);}
+if(!fs.existsSync(path.join(repo,'.tmp/angular-dist/browser/index.html'))||!fs.existsSync(path.join(repo,'electron/main.js')))throw Error('Compiled payload missing');
+run([path.join(repo,'node_modules/electron-builder/cli.js'),'--config',path.join(repo,'build/electron-builder.project1-public.cjs'),'--win','nsis','--x64','--publish','never'],{PROJECT1_PUBLIC_VERSION:version,PROJECT1_NSIS_AUDIT_DIR:path.join(output,'compiler-audit'),NODE_OPTIONS:`--require ${path.join(repo,'tools/project1/public-nsis-preload.cjs')}`,CSC_IDENTITY_AUTO_DISCOVERY:'false'});
+const hash=f=>crypto.createHash('sha256').update(fs.readFileSync(f)).digest('hex');const rows=[];const visit=(dir)=>{for(const name of fs.readdirSync(dir).sort()){const p=path.join(dir,name),s=fs.lstatSync(p);if(s.isSymbolicLink())throw Error('Linked payload');if(s.isDirectory())visit(p);else rows.push({path:path.relative(path.join(output,'win-unpacked'),p).replaceAll('\\','/'),sha256:hash(p),bytes:s.size});}};visit(path.join(output,'win-unpacked'));
+const setup=fs.readdirSync(output).find(n=>n.endsWith('.exe')&&!n.startsWith('.'));if(!setup)throw Error('Setup missing');
+const manifest={version,appId:'local.project1.progress',setup,setupSha256:hash(path.join(output,setup)),setupBytes:fs.statSync(path.join(output,setup)).size,payload:rows,uninstallerSha256:hash(path.join(output,'compiler-audit/reviewed-uninstaller.exe')),sourceBuildSkipped:skip,builtAt:new Date().toISOString(),signed:false};fs.writeFileSync(path.join(output,'build-manifest.json'),JSON.stringify(manifest,null,2));console.log(JSON.stringify({output,setup,version,files:rows.length}));

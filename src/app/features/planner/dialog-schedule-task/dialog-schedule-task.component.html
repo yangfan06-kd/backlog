@@ -1,0 +1,119 @@
+<mat-dialog-content>
+  @if (isConfigReady()) {
+    <datetime-picker
+      [selectedDate]="selectedDate"
+      [selectedTime]="selectedTime"
+      [selectedReminderCfgId]="selectedReminderCfgId"
+      [reminderOptions]="remindAvailableOptions"
+      [minDate]="minDate"
+      [showQuickAccess]="data.showQuickAccess !== false"
+      [timeLabel]="T.F.TASK.D_SELECT_DATE_AND_TIME.TIME | translate"
+      (dateSelected)="dateSelected($event)"
+      (timeChanged)="selectedTime = $event"
+      (reminderChanged)="selectedReminderCfgId = $event"
+      (quickAccessClick)="onQuickAccessClick($event)"
+      (enterSubmit)="submit()"
+    >
+      @if (canRepeat) {
+        <!-- A read-only field rather than a button so it matches the Time and
+             Remind fields beside it; activating it opens the repeat dialog. Left
+             empty when not repeating, so the "Repeat" label alone fills it, like
+             the empty Time field; the title carries long values cut off by the
+             narrow half-width field. -->
+        <mat-form-field
+          timeRowEnd
+          class="repeat-field"
+          data-test-id="schedule-repeat-field"
+          (click)="openRepeatDialog()"
+        >
+          <mat-label>{{ T.F.TASK.D_SCHEDULE_TASK.REPEAT | translate }}</mat-label>
+          <mat-icon matPrefix>repeat</mat-icon>
+          <input
+            matInput
+            readonly
+            aria-haspopup="dialog"
+            [value]="repeatCfgLabel() ?? ''"
+            [title]="
+              repeatCfgLabel() || (T.F.TASK.D_SCHEDULE_TASK.DOES_NOT_REPEAT | translate)
+            "
+            (keydown.enter)="$event.preventDefault(); openRepeatDialog()"
+            (keydown.space)="$event.preventDefault(); openRepeatDialog()"
+          />
+        </mat-form-field>
+      }
+    </datetime-picker>
+    @if (selectedTime && selectedReminderCfgId !== DO_NOT_REMIND) {
+      <exact-alarm-hint />
+    }
+  }
+
+  <div class="dialog-actions-and-warnings">
+    @if (
+      selectedTime &&
+      (scheduleWarnings().hasOverlap || scheduleWarnings().isOutsideWorkHours)
+    ) {
+      <div
+        class="schedule-info"
+        aria-live="polite"
+      >
+        <mat-icon>info</mat-icon>
+        <div class="schedule-info-text">
+          @if (scheduleWarnings().hasOverlap) {
+            <div>{{ T.F.TASK.D_SCHEDULE_TASK.INFO_OVERLAP | translate }}</div>
+          }
+          @if (scheduleWarnings().isOutsideWorkHours) {
+            <div>{{ T.F.TASK.D_SCHEDULE_TASK.INFO_OUTSIDE_WORK_HOURS | translate }}</div>
+          }
+        </div>
+      </div>
+    }
+
+    <mat-dialog-actions align="end">
+      <button
+        mat-button
+        (click)="close()"
+        type="button"
+        data-test-id="schedule-cancel-btn"
+      >
+        <span class="action-label">{{ T.G.CANCEL | translate }}</span>
+      </button>
+      @if (
+        !data.isSelectDueOnly && data.task && (data.task.dueWithTime || plannedDayForTask)
+      ) {
+        <button
+          (click)="remove()"
+          color="warn"
+          mat-stroked-button
+          type="button"
+          data-test-id="schedule-unschedule-btn"
+        >
+          @if (selectedTime) {
+            <mat-icon>alarm_off</mat-icon>
+          } @else {
+            <mat-icon>event_busy</mat-icon>
+          }
+          <span class="action-label">
+            {{ T.F.TASK.D_SCHEDULE_TASK.UNSCHEDULE | translate }}
+          </span>
+        </button>
+      }
+      <button
+        color="primary"
+        mat-flat-button
+        [disabled]="!selectedDate"
+        (click)="submit()"
+        type="button"
+        data-test-id="schedule-submit-btn"
+      >
+        @if (selectedTime) {
+          <mat-icon>alarm</mat-icon>
+        } @else {
+          <mat-icon>today</mat-icon>
+        }
+        <span class="action-label">
+          {{ T.F.TASK.D_SCHEDULE_TASK.SCHEDULE | translate }}
+        </span>
+      </button>
+    </mat-dialog-actions>
+  </div>
+</mat-dialog-content>

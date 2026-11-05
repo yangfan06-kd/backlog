@@ -1,0 +1,206 @@
+<main
+  class="memo-page"
+  data-testid="memo-page"
+>
+  <header class="memo-head">
+    <h1>备忘</h1>
+    @if (!trashed()) {
+      <button
+        type="button"
+        class="memo-primary"
+        data-testid="memo-new"
+        (click)="open(null)"
+        [disabled]="saving()"
+      >
+        新建备忘
+      </button>
+    }
+  </header>
+  <div
+    class="memo-tabs"
+    role="group"
+    aria-label="备忘视图"
+  >
+    <button
+      type="button"
+      data-testid="memo-tab-active"
+      [attr.aria-pressed]="!trashed()"
+      (click)="switchTrash(false)"
+    >
+      全部备忘</button
+    ><button
+      type="button"
+      data-testid="memo-tab-trash"
+      [attr.aria-pressed]="trashed()"
+      (click)="switchTrash(true)"
+    >
+      回收站
+    </button>
+  </div>
+  <p
+    class="memo-status"
+    role="status"
+  >
+    {{ message() }}
+  </p>
+  <ng-template #memoEditor>
+    <personal-rich-text-editor
+      [text]="draft().text"
+      [format]="draft().format"
+      [resetKey]="resetKey()"
+      [wrapToolbar]="true"
+      testId="memo-input"
+      ariaLabel="备忘内容"
+      [disabled]="saving()"
+      (valueChange)="draft.set($event)"
+    />
+    <div class="memo-actions">
+      <label class="memo-reminder-switch"
+        ><input
+          type="checkbox"
+          data-testid="memo-reminder-enabled"
+          [ngModel]="reminderEnabled()"
+          (ngModelChange)="reminderEnabled.set($event)"
+          [disabled]="saving()"
+        />提醒</label
+      >
+      @if (reminderEnabled()) {
+        <label
+          >提醒时间<input
+            type="datetime-local"
+            data-testid="memo-time"
+            [ngModel]="reminder()"
+            (ngModelChange)="reminder.set($event)"
+            [disabled]="saving()"
+        /></label>
+        <label
+          >提前<select
+            data-testid="memo-advance"
+            [ngModel]="advanceMinutes()"
+            (ngModelChange)="advanceMinutes.set($event)"
+            [disabled]="saving()"
+          >
+            <option [ngValue]="0">到时提醒</option>
+            <option [ngValue]="5">5 分钟</option>
+            <option [ngValue]="10">10 分钟</option>
+            <option [ngValue]="15">15 分钟</option>
+            <option [ngValue]="30">30 分钟</option>
+            <option [ngValue]="60">1 小时</option>
+            <option [ngValue]="1440">1 天</option>
+            <option [ngValue]="10080">1 周</option>
+          </select></label
+        >
+      }
+      <button
+        type="button"
+        data-testid="memo-test-notification"
+        (click)="testNotification()"
+        [disabled]="saving()"
+      >
+        测试提醒
+      </button>
+    </div>
+    <div class="memo-editor-footer">
+      <button
+        type="button"
+        class="memo-primary"
+        data-testid="memo-save"
+        (click)="save()"
+        [disabled]="saving() || !draft().text.trim()"
+      >
+        保存</button
+      ><button
+        type="button"
+        data-testid="memo-close"
+        (click)="closeEditor()"
+        [disabled]="saving()"
+      >
+        取消
+      </button>
+    </div>
+  </ng-template>
+  <section
+    class="memo-list"
+    aria-label="备忘列表"
+    cdkDropList
+    [cdkDropListData]="notes()"
+    [cdkDropListDisabled]="saving() || editorOpen() || trashed()"
+    (cdkDropListDropped)="dropCards($event)"
+  >
+    @if (!trashed() && editorOpen() && !selected()) {
+      <article
+        class="memo-card is-editing"
+        data-testid="memo-draft-card"
+      >
+        <ng-container [ngTemplateOutlet]="memoEditor" />
+      </article>
+    }
+    @if (!notes().length && !editorOpen()) {
+      <p>暂无备忘</p>
+    }
+    @for (note of notes(); track note.id) {
+      <article
+        class="memo-card"
+        data-testid="memo-card"
+        [attr.data-note-id]="note.id"
+        [class.is-editing]="editorOpen() && selected()?.id === note.id"
+        cdkDrag
+        [cdkDragData]="note"
+        [cdkDragStartDelay]="{ mouse: 0, touch: 320 }"
+        cdkDragLockAxis="y"
+      >
+        @if (!trashed() && editorOpen() && selected()?.id === note.id) {
+          <ng-container [ngTemplateOutlet]="memoEditor" />
+        } @else {
+          <personal-text-view
+            class="memo-preview"
+            [text]="note.content"
+            [format]="note.personalMemo?.format"
+            cdkDragHandle
+            tabindex="0"
+            (dblclick)="!trashed() && open(note)"
+            (keydown.alt.arrowup)="moveCard($event, note, -1)"
+            (keydown.alt.arrowdown)="moveCard($event, note, 1)"
+          />
+          <div class="memo-card-actions">
+            @if (note.personalMemo?.remindAt; as time) {
+              <time
+                [class.memo-due]="time <= now()"
+                [attr.datetime]="time"
+                >{{ timeLabel(time) }}</time
+              >
+            }
+            @if (!trashed()) {
+              <button
+                type="button"
+                data-testid="memo-edit"
+                (click)="open(note)"
+                [disabled]="saving()"
+              >
+                编辑
+              </button>
+            }
+            <button
+              type="button"
+              data-testid="memo-trash"
+              (click)="toggleTrash(note)"
+              [disabled]="saving()"
+            >
+              {{ trashed() ? '恢复' : '删除' }}
+            </button>
+            @if (trashed()) {
+              <button
+                type="button"
+                data-testid="memo-delete-forever"
+                (click)="deleteForever(note)"
+                [disabled]="saving()"
+              >
+                彻底删除
+              </button>
+            }
+          </div>
+        }
+      </article>
+    }
+  </section>
+</main>

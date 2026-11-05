@@ -1,0 +1,27 @@
+@if (formattedTimeSummary(); as summary) {
+  <div class="time-summary">
+    <span
+      >{{ T.F.TASK_REPEAT.D_EDIT.TIME_SPENT_TOTAL | translate }}:
+      {{ summary.total }}</span
+    >
+    @if (summary.thisWeek) {
+      <span
+        >{{ T.F.TASK_REPEAT.D_EDIT.TIME_SPENT_THIS_WEEK | translate }}:
+        {{ summary.thisWeek }}</span
+      >
+    }
+    @if (summary.thisMonth) {
+      <span
+        >{{ T.F.TASK_REPEAT.D_EDIT.TIME_SPENT_THIS_MONTH | translate }}:
+        {{ summary.thisMonth }}</span
+      >
+    }
+  </div>
+}
+@if (heatmapData(); as data) {
+  <heatmap
+    [data]="data"
+    [showLegend]="false"
+    [scrollToEnd]="true"
+  />
+}

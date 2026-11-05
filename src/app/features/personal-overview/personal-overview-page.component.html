@@ -1,0 +1,301 @@
+<div
+  class="po-page"
+  data-testid="po-page"
+>
+  <header class="po-header">
+    <div>
+      <h1>{{ 'PERSONAL_OVERVIEW.TITLE' | translate }}</h1>
+    </div>
+    <button
+      type="button"
+      class="po-create"
+      data-testid="po-create-project"
+      (click)="createProject()"
+      [disabled]="isSaving()"
+    >
+      {{ 'PERSONAL_OVERVIEW.CREATE_PROJECT' | translate }}
+    </button>
+  </header>
+
+  <div
+    class="po-status"
+    data-testid="po-status"
+    [attr.data-save-state]="saveState().kind"
+    [class.is-error]="saveState().kind === 'failed' || saveState().kind === 'rejected'"
+    role="status"
+  >
+    @if (saveState().kind !== 'idle') {
+      <span>{{ saveStateText() | translate }}</span>
+    }
+    @if (saveStateError(); as error) {
+      <small>{{ error }}</small>
+    }
+  </div>
+
+  <div
+    class="po-plan-filters"
+    role="group"
+    aria-label="计划日期筛选"
+  >
+    @for (option of planFilters; track option.id) {
+      <button
+        type="button"
+        [attr.data-testid]="'po-filter-' + option.id"
+        [attr.aria-pressed]="planFilter() === option.id"
+        (click)="planFilter.set(option.id)"
+      >
+        {{ option.label }}
+      </button>
+    }
+  </div>
+  @if (filteredProjectCount() === 0) {
+    <section
+      class="po-empty-state"
+      data-testid="po-empty-state"
+    >
+      <h2>{{ planEmptyText() }}</h2>
+      @if (planFilter() !== 'all') {
+        <button
+          type="button"
+          class="po-open"
+          data-testid="po-clear-filter"
+          (click)="planFilter.set('all')"
+        >
+          查看全部项目
+        </button>
+      }
+    </section>
+  } @else {
+    <section
+      class="po-grid"
+      [attr.aria-label]="'PERSONAL_OVERVIEW.QUADRANTS_LABEL' | translate"
+    >
+      @for (group of quadrantGroups(); track group.id) {
+        <article
+          class="po-quadrant"
+          data-testid="po-quadrant"
+          [attr.data-quadrant]="group.id"
+          [class.is-empty]="group.rows.length === 0"
+        >
+          <h2>{{ group.labelKey | translate }}</h2>
+          @if (group.rows.length === 0) {
+            <p class="po-empty">{{ 'PERSONAL_OVERVIEW.EMPTY_GROUP' | translate }}</p>
+          } @else {
+            <div
+              class="po-projects"
+              cdkDropList
+              [cdkDropListData]="group.rows"
+              (cdkDropListDropped)="dropProject($event)"
+            >
+              @for (row of group.rows; track row.project.id) {
+                <div
+                  cdkDrag
+                  [cdkDragDisabled]="isSaving()"
+                  [cdkDragStartDelay]="dragStartDelay"
+                >
+                  <ng-container
+                    *ngTemplateOutlet="projectRow; context: { $implicit: row }"
+                  ></ng-container>
+                </div>
+              }
+            </div>
+          }
+        </article>
+      }
+    </section>
+
+    @if (unclassifiedGroup().rows.length > 0) {
+      <section
+        class="po-unclassified"
+        data-testid="po-unclassified"
+      >
+        <h2>{{ unclassifiedGroup().labelKey | translate }}</h2>
+        @if (unclassifiedGroup().rows.length === 0) {
+          <p class="po-empty">{{ 'PERSONAL_OVERVIEW.EMPTY_UNCLASSIFIED' | translate }}</p>
+        } @else {
+          <div
+            class="po-projects"
+            cdkDropList
+            [cdkDropListData]="unclassifiedGroup().rows"
+            (cdkDropListDropped)="dropProject($event)"
+          >
+            @for (row of unclassifiedGroup().rows; track row.project.id) {
+              <div
+                cdkDrag
+                [cdkDragDisabled]="isSaving()"
+                [cdkDragStartDelay]="dragStartDelay"
+              >
+                <ng-container
+                  *ngTemplateOutlet="projectRow; context: { $implicit: row }"
+                ></ng-container>
+              </div>
+            }
+          </div>
+        }
+      </section>
+    }
+  }
+
+  <ng-template
+    #projectRow
+    let-row
+  >
+    <article
+      class="po-project"
+      tabindex="0"
+      [attr.aria-label]="
+        row.project.title + '，按住拖动调整顺序，或使用 Alt 加上下方向键'
+      "
+      aria-keyshortcuts="Alt+ArrowUp Alt+ArrowDown"
+      (keydown)="moveProjectByKey($event, row)"
+      data-testid="po-project-row"
+      [attr.data-project-id]="row.project.id"
+      [attr.data-current-quadrant]="row.quadrant ?? 'unclassified'"
+      [class.is-selected]="selectedProjectId() === row.project.id"
+      (click)="onProjectRowClick($event, row)"
+    >
+      <div class="po-project-head">
+        <button
+          #projectName
+          type="button"
+          class="po-project-name"
+          data-testid="po-project-name"
+          [attr.data-project-id]="row.project.id"
+          [attr.aria-expanded]="isExpanded(row)"
+          [attr.aria-controls]="'po-steps-' + row.project.id"
+          (click)="selectProject(row); toggleExpanded(row)"
+        >
+          <span
+            class="po-caret"
+            aria-hidden="true"
+            >{{ isExpanded(row) ? '▾' : '▸' }}</span
+          >
+          {{ row.project.title }}
+        </button>
+        <span class="po-remaining">
+          {{
+            'PERSONAL_OVERVIEW.REMAINING_STEPS' | translate: { count: row.steps.length }
+          }}
+        </span>
+        @if (row.project.personalProgress?.planning?.day; as plannedDay) {
+          <span
+            class="po-plan-date"
+            data-testid="po-plan-date"
+            >{{ plannedDay }}</span
+          >
+        }
+        <button
+          type="button"
+          class="po-classify"
+          data-testid="po-classify"
+          [attr.data-project-id]="row.project.id"
+          [attr.data-quadrant]="row.quadrant ?? 'unclassified'"
+          [attr.aria-label]="
+            'PERSONAL_OVERVIEW.CLASSIFY_PROJECT'
+              | translate: { project: row.project.title }
+          "
+          [disabled]="isSaving()"
+          [matMenuTriggerFor]="quadrantMenu"
+          (click)="selectProject(row)"
+        >
+          {{ 'PERSONAL_OVERVIEW.CLASSIFY' | translate }}
+        </button>
+        <mat-menu
+          #quadrantMenu="matMenu"
+          class="project1-menu"
+        >
+          @for (quadrant of quadrantIds; track quadrant) {
+            <button
+              mat-menu-item
+              type="button"
+              [attr.data-testid]="'po-quadrant-option-' + quadrant"
+              [class.is-current]="isCurrentQuadrant(row, quadrant)"
+              (click)="chooseQuadrant(row, quadrant)"
+            >
+              <span>{{ quadrantLabelKey(quadrant) | translate }}</span>
+              @if (isCurrentQuadrant(row, quadrant)) {
+                <span class="po-current">{{
+                  'PERSONAL_OVERVIEW.CURRENT' | translate
+                }}</span>
+              }
+            </button>
+          }
+          <button
+            mat-menu-item
+            type="button"
+            data-testid="po-quadrant-option-unclassified"
+            [class.is-current]="isCurrentQuadrant(row, null)"
+            (click)="chooseQuadrant(row, 'unclassified')"
+          >
+            <span>{{ 'PERSONAL_OVERVIEW.UNCLASSIFIED' | translate }}</span>
+            @if (isCurrentQuadrant(row, null)) {
+              <span class="po-current">{{
+                'PERSONAL_OVERVIEW.CURRENT' | translate
+              }}</span>
+            }
+          </button>
+        </mat-menu>
+        <button
+          type="button"
+          class="po-open"
+          data-testid="po-open-progress"
+          [attr.data-project-id]="row.project.id"
+          (click)="openProgress(row)"
+          [disabled]="isSaving()"
+        >
+          {{ 'PERSONAL_OVERVIEW.OPEN_PROGRESS' | translate }}
+        </button>
+        <personal-project-tools
+          [project]="row.project"
+          [disabled]="isSaving()"
+          (planChanged)="manageProject(row, 'schedule', $event)"
+          (trashConfirmed)="manageProject(row, 'trash')"
+          (renamed)="renameProject($event)"
+        ></personal-project-tools>
+      </div>
+
+      @if (isExpanded(row)) {
+        <div [id]="'po-steps-' + row.project.id">
+          @if (row.steps.length === 0) {
+            <p class="po-empty-inline">
+              {{ 'PERSONAL_OVERVIEW.NO_STEPS' | translate }}
+            </p>
+          } @else {
+            <div
+              class="po-steps-scroll"
+              data-testid="po-steps-scroll"
+            >
+              <ol class="po-steps">
+                @for (step of row.steps; track step.task.id) {
+                  <li>
+                    <span class="po-numeral">{{ step.roman }}</span>
+                    <span
+                      class="po-step-title"
+                      data-testid="po-step-title"
+                      ><personal-text-view
+                        [text]="step.task.title"
+                        [format]="step.task.personalProgress?.stepFormat"
+                      ></personal-text-view
+                    ></span>
+                  </li>
+                }
+              </ol>
+            </div>
+          }
+        </div>
+      }
+
+      @if (
+        errorProjectId() === row.project.id &&
+        (saveState().kind === 'failed' || saveState().kind === 'rejected')
+      ) {
+        <p
+          class="po-project-error"
+          role="alert"
+        >
+          {{ saveStateText() | translate }}
+        </p>
+      }
+    </article>
+  </ng-template>
+</div>

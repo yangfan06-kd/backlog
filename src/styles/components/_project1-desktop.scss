@@ -1,0 +1,504 @@
+// DS-018: one scoped desktop surface, including shared feedback and typography.
+@mixin project1-light-surface {
+  --project1-font-stack:
+    'Microsoft YaHei UI', 'Microsoft YaHei', 'Segoe UI Variable Text', 'Segoe UI',
+    sans-serif;
+  --bg: #f4f6f8;
+  --card-bg: #fff;
+  --text-color: #273b49;
+  --text-color-muted: #536975;
+  --separator-color: #dce3e8;
+  --c-primary: #537b93;
+  --link-color: #426b81;
+  --project1-primary-label: #fff;
+  --project1-hover-bg: #e5eef4;
+  --project1-nav-bg: #f9fafb;
+  --sidenav-text: #536975;
+  --sidenav-text-secondary: #697d88;
+  --sidenav-active-bg: #e5eef4;
+  --sidenav-hover-bg: #edf3f6;
+  --font-size-sm: 13px;
+  --font-size-3xl: 24px;
+  --radius-sm: 10px;
+  --project1-page-gutter: 28px;
+  font-family: var(--project1-font-stack);
+  -webkit-font-smoothing: antialiased;
+}
+
+.app-container.is-preview-mode {
+  @include project1-light-surface;
+
+  h1 {
+    letter-spacing: -0.02em;
+  }
+
+  :where(button, input, select, textarea) {
+    font-family: inherit;
+  }
+
+  button {
+    transition:
+      color 160ms ease,
+      background-color 160ms ease,
+      border-color 160ms ease,
+      box-shadow 160ms ease;
+
+    &:focus-visible {
+      outline: 2px solid var(--c-primary);
+      outline-offset: 3px;
+    }
+
+    &:not(:disabled):hover {
+      box-shadow: 0 2px 5px #273b490a;
+    }
+
+    &:not(:disabled):active {
+      box-shadow: inset 0 1px 3px #273b4918;
+    }
+  }
+
+  .po-header,
+  .pp-header,
+  .pr-head,
+  .pa-header {
+    margin-bottom: 20px;
+    align-items: center;
+  }
+
+  .po-quadrant,
+  .po-unclassified,
+  .pa-card,
+  .pb-card {
+    border-radius: 14px;
+    padding: 20px;
+    box-shadow: 0 2px 8px #273b4904;
+  }
+
+  .po-quadrant {
+    min-height: 128px;
+  }
+
+  .po-grid {
+    gap: 18px;
+  }
+
+  .po-project {
+    padding: 10px 6px;
+    border-color: transparent;
+    border-bottom-color: var(--separator-color);
+    background: transparent;
+    border-radius: 0;
+
+    &.is-selected {
+      background: var(--project1-hover-bg);
+      border-color: transparent;
+      border-bottom-color: var(--separator-color);
+      box-shadow: none;
+    }
+  }
+
+  .po-project-name {
+    flex-basis: 10rem;
+    font-size: 15px;
+  }
+
+  .po-classify {
+    border-color: transparent;
+    background: transparent;
+    padding-left: 0;
+  }
+
+  .po-open {
+    margin-left: auto;
+    border-color: transparent;
+    background: var(--card-bg);
+  }
+
+  .po-plan-date,
+  .pp-plan-date {
+    color: var(--link-color);
+    font-size: 12px;
+    font-weight: 400;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .pp-toolbar {
+    padding: 12px 14px;
+    gap: 12px;
+    border-radius: 12px;
+    margin-bottom: 18px;
+  }
+
+  .pp-toolbar-actions button {
+    border-color: transparent;
+    background: transparent;
+    color: var(--text-color-muted);
+
+    &:hover:not(:disabled) {
+      background: var(--project1-hover-bg);
+      color: var(--text-color);
+    }
+  }
+
+  .pp-create-plan {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--text-color-muted);
+
+    input {
+      width: 140px;
+    }
+  }
+
+  .pp-board-scroll,
+  .pr-board-scroll {
+    border-radius: 12px;
+    max-height: calc(100vh - 300px);
+  }
+
+  .pp-today-col {
+    border-left: 1px solid
+      color-mix(in srgb, var(--c-primary) 25%, var(--separator-color));
+    border-right: 1px solid var(--separator-color);
+  }
+
+  .pp-step-card {
+    border-radius: 10px;
+    box-shadow: 0 1px 3px #273b4908;
+  }
+
+  .pp-plan-date {
+    display: block;
+    margin-top: 8px;
+  }
+
+  .pp-project-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-top: 6px;
+
+    .pp-project-meta {
+      margin-top: 0;
+    }
+
+    personal-project-tools {
+      flex: 0 0 auto;
+    }
+  }
+
+  .po-plan-filters,
+  .pa-view-tabs {
+    display: inline-flex;
+    flex-wrap: wrap;
+    max-width: 100%;
+    gap: 4px;
+    padding: 4px;
+    margin-bottom: 22px;
+    background: var(--separator-color);
+    border-radius: 10px;
+
+    button {
+      min-height: 32px;
+      padding: 0 14px;
+      border: 0;
+      border-radius: 7px;
+      background: transparent;
+      color: var(--text-color-muted);
+      cursor: pointer;
+      font: inherit;
+      font-size: 13px;
+
+      &[aria-pressed='true'] {
+        color: var(--link-color);
+        background: var(--card-bg);
+        box-shadow: 0 1px 3px #273b490d;
+      }
+    }
+  }
+
+  .pa-trash-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 12px;
+
+    h2 {
+      margin: 0;
+      font-size: 16px;
+      overflow-wrap: anywhere;
+    }
+  }
+}
+
+.app-container.is-preview-mode {
+  .po-quadrant.is-empty {
+    min-height: 80px;
+  }
+  .po-empty-state {
+    display: grid;
+    justify-items: start;
+    gap: 16px;
+    padding: 32px;
+    border: 1px solid var(--separator-color);
+    border-radius: 12px;
+    background: var(--card-bg);
+  }
+  .po-empty-state h2 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 500;
+  }
+  .pp-selection {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    margin: 0 0 14px;
+    padding: 0 4px;
+    font-size: 13px;
+    color: var(--text-color-muted);
+  }
+  .pp-selection strong {
+    margin-left: 8px;
+    color: var(--text-color);
+    font-weight: 500;
+    overflow-wrap: anywhere;
+  }
+  .pp-selection button {
+    flex: 0 0 auto;
+    min-height: 34px;
+    padding: 0 12px;
+    border: 1px solid var(--separator-color);
+    border-radius: 8px;
+    background: var(--card-bg);
+    color: var(--text-color);
+    font: inherit;
+    cursor: pointer;
+  }
+  .pp-archived-notice {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: var(--text-color-muted);
+    font-size: 13px;
+  }
+}
+
+.project1-menu {
+  background: #fff !important;
+  color: #273b49;
+  font-family: 'Microsoft YaHei UI', 'Microsoft YaHei', 'Segoe UI', sans-serif;
+  .mat-mdc-menu-item {
+    min-height: 40px;
+    color: inherit;
+    font-family: inherit;
+  }
+  .mat-mdc-menu-item-text {
+    font-family: inherit;
+    font-size: 14px;
+  }
+}
+.isDarkTheme .project1-menu {
+  background: #22252d !important;
+  color: #eef0f5;
+}
+.isDarkTheme .project1-dialog {
+  button {
+    background: #303b50;
+    color: #eef0f5;
+    border-color: #516079;
+  }
+  button:hover:not(:disabled) {
+    background: #3a4963;
+  }
+  button.project1-primary {
+    background: #a1b2e8;
+    color: #1d2232;
+    border-color: #a1b2e8;
+  }
+  button.project1-danger {
+    background: #b43946;
+    color: #fff;
+    border-color: #b43946;
+  }
+  input {
+    background: #17191f;
+    color: #eef0f5;
+    border-color: #63738e;
+  }
+}
+
+@mixin project1-dark-surface {
+  --bg: #17191f;
+  --card-bg: #22252d;
+  --text-color: #eef0f5;
+  --text-color-muted: #b8bdc9;
+  --separator-color: #414551;
+  --c-primary: #a1b2e8;
+  --link-color: #b4c2f0;
+  --project1-primary-label: #1d2232;
+  --project1-hover-bg: #303543;
+  --project1-nav-bg: #1d1f26;
+  --sidenav-text: #c1c4ce;
+  --sidenav-text-secondary: #b8bdc9;
+  --sidenav-active-bg: #303543;
+  --sidenav-hover-bg: #292d37;
+}
+
+.isDarkTheme .app-container.is-preview-mode {
+  @include project1-dark-surface;
+}
+
+// Connected editors render outside the app container; inherit its palette there too.
+.cdk-overlay-container .pp-editor-panel {
+  @include project1-light-surface;
+  --c-accent: var(--c-primary);
+  --button-accent-label: var(--project1-primary-label);
+}
+
+.isDarkTheme .cdk-overlay-container .pp-editor-panel {
+  @include project1-dark-surface;
+}
+
+.project1-dialog {
+  font-family: 'Segoe UI', 'Microsoft YaHei UI', sans-serif;
+
+  button {
+    min-height: 36px;
+    padding: 0 16px;
+    margin-left: 8px;
+    border: 1px solid #dce3ed;
+    border-radius: 8px;
+    background: #f4f6f8;
+    color: #273b49;
+    cursor: pointer;
+    font: inherit;
+    transition: background-color 160ms ease;
+
+    &:hover:not(:disabled) {
+      background: #e8edf7;
+    }
+
+    &:focus-visible {
+      outline: 2px solid #537b93;
+      outline-offset: 2px;
+    }
+
+    &.project1-primary {
+      background: #537b93;
+      color: #fff;
+      border-color: #537b93;
+    }
+
+    &.project1-danger {
+      background: #b43946;
+      color: #fff;
+      border-color: #b43946;
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: default;
+    }
+  }
+
+  .project1-date-field {
+    display: grid;
+    gap: 16px;
+    color: inherit;
+
+    input {
+      min-height: 40px;
+      padding: 0 12px;
+      border: 1px solid #c6d0df;
+      border-radius: 8px;
+      font: inherit;
+      color-scheme: light dark;
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-container.is-preview-mode button,
+  .project1-dialog button {
+    transition: none;
+  }
+}
+
+// DS-019 fixed board geometry
+.app-container.is-preview-mode .pp-board-scroll {
+  container-type: inline-size;
+}
+.app-container.is-preview-mode .pp-board {
+  --pp-steps-width: max(
+    280px,
+    calc(
+      100cqw - var(--pp-project-width) - var(--pp-today-width) - var(--pp-day-width) *
+        min(var(--pp-date-count), 1)
+    )
+  );
+  width: calc(
+    var(--pp-project-width) + var(--pp-day-width) * var(--pp-date-count) +
+      var(--pp-today-width) + var(--pp-steps-width)
+  );
+  min-width: 0;
+}
+.app-container.is-preview-mode .pp-project-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: 'count count' 'archive menu';
+  gap: 4px 8px;
+}
+.app-container.is-preview-mode .pp-project-actions .pp-project-meta {
+  grid-area: count;
+}
+.app-container.is-preview-mode .pp-project-actions .pp-project-finish {
+  grid-area: archive;
+  justify-self: start;
+  min-height: 32px;
+  padding: 0 8px;
+  font-size: 13px;
+}
+.app-container.is-preview-mode .pp-project-actions personal-project-tools {
+  grid-area: menu;
+}
+@media (max-width: 1100px) {
+  .app-container.is-preview-mode .pp-board {
+    --pp-steps-width: max(
+      220px,
+      calc(
+        100cqw - var(--pp-project-width) - var(--pp-today-width) - var(--pp-day-width) *
+          min(var(--pp-date-count), 1)
+      )
+    );
+  }
+}
+@container (max-width: 540px) {
+  .app-container.is-preview-mode .pp-board .pp-today-col,
+  .app-container.is-preview-mode .pp-board .pp-steps-col {
+    position: static;
+    right: auto;
+  }
+}
+
+// Shared drag preview used by table rows; it remains legible outside table layout.
+.project1-row-preview {
+  box-sizing: border-box;
+  width: 260px;
+  padding: var(--s2);
+  border: 1px solid var(--separator-color);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--whiteframe-shadow-4dp);
+  background: var(--card-bg);
+  color: var(--text-color);
+  font-family: var(--project1-font-stack);
+}
+.app-container.is-preview-mode .cdk-drag-placeholder {
+  opacity: 0.3;
+}

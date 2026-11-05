@@ -1,0 +1,116 @@
+personal-rich-text-editor {
+  display: block;
+  position: relative;
+}
+
+.pt-toolbar {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+  overflow-x: auto;
+  margin-bottom: var(--s-half);
+  padding-bottom: 2px;
+  overscroll-behavior-x: contain;
+}
+
+.pt-toolbar.pt-toolbar-wrap {
+  flex-wrap: wrap;
+  overflow-x: visible;
+}
+
+.pt-tool,
+.pt-color {
+  flex: 0 0 auto;
+  min-height: 26px;
+  padding: 1px 6px;
+  border: 1px solid var(--separator-color);
+  border-radius: var(--radius-sm);
+  background: var(--card-bg);
+  color: var(--text-color);
+  font: inherit;
+  font-size: var(--font-size-xs);
+  line-height: 1.2;
+  cursor: pointer;
+}
+
+.pt-tool:hover,
+.pt-color:hover,
+.pt-tool.is-active,
+.pt-color.is-active {
+  background: var(--c-accent);
+  color: var(--button-accent-label, var(--text-color));
+}
+
+.pt-tool:disabled,
+.pt-color:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.pt-tool:focus-visible,
+.pt-color:focus-visible {
+  outline: 2px solid var(--c-accent);
+  outline-offset: 2px;
+}
+
+.pt-colors {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  width: 100%;
+  margin: 0 0 var(--s-half);
+  padding: 4px;
+  border: 1px solid var(--separator-color);
+  border-radius: var(--radius-sm);
+  background: var(--card-bg);
+}
+
+.pt-swatch {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-right: 4px;
+  border-radius: 50%;
+  border: 1px solid var(--separator-color);
+  vertical-align: middle;
+}
+
+.pt-swatch-red {
+  background: var(--pt-color-red);
+}
+.pt-swatch-blue {
+  background: var(--pt-color-blue);
+}
+.pt-swatch-green {
+  background: var(--pt-color-green);
+}
+.pt-swatch-purple {
+  background: var(--pt-color-purple);
+}
+
+.pt-host {
+  min-height: 44px;
+  border: 1px solid var(--separator-color);
+  border-radius: var(--radius-sm);
+  background: var(--card-bg);
+  overflow: hidden;
+}
+
+.pt-host .cm-editor {
+  min-height: 42px;
+  background: transparent;
+  color: var(--text-color);
+  font: inherit;
+}
+
+.pt-host .cm-content {
+  padding: var(--s-half);
+  font: inherit;
+}
+
+.pt-host .cm-focused {
+  outline: 2px solid var(--c-accent);
+  outline-offset: -1px;
+}

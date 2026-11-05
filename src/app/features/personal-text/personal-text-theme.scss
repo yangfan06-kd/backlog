@@ -1,0 +1,41 @@
+// Both the editor and read-only view load this identical, deduplicated stylesheet.
+// Native host selectors also work when a read-only page is opened directly.
+personal-rich-text-editor,
+personal-text-view {
+  --pt-color-red: #b3261e;
+  --pt-color-blue: #1a5fb4;
+  --pt-color-green: #2e7d32;
+  --pt-color-purple: #6a1b9a;
+}
+
+.isDarkTheme personal-rich-text-editor,
+.isDarkTheme personal-text-view {
+  --pt-color-red: #ff8a80;
+  --pt-color-blue: #8ab4f8;
+  --pt-color-green: #81c995;
+  --pt-color-purple: #d7aefb;
+}
+
+:is(personal-rich-text-editor, personal-text-view) {
+  .pt-bold {
+    font-weight: var(--font-weight-bold);
+  }
+  .pt-italic {
+    font-style: italic;
+  }
+  .pt-underline {
+    text-decoration: underline;
+  }
+  .pt-color-red {
+    color: var(--pt-color-red);
+  }
+  .pt-color-blue {
+    color: var(--pt-color-blue);
+  }
+  .pt-color-green {
+    color: var(--pt-color-green);
+  }
+  .pt-color-purple {
+    color: var(--pt-color-purple);
+  }
+}

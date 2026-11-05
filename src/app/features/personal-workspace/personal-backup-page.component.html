@@ -1,0 +1,241 @@
+<div
+  class="pb-page"
+  data-testid="pb-page"
+>
+  <header class="pb-header">
+    <div>
+      <h1
+        class="pb-title"
+        data-testid="pb-heading"
+      >
+        {{ 'PERSONAL_BACKUP.TITLE' | translate }}
+      </h1>
+    </div>
+    <div
+      class="pb-status"
+      [class.is-error]="status() === 'error'"
+      [attr.data-save-state]="status()"
+      data-testid="pb-status"
+      role="status"
+      aria-live="polite"
+    >
+      @if (status() !== 'idle') {
+        {{ statusText() | translate }}
+      }
+    </div>
+  </header>
+
+  <section class="pb-actions">
+    <article class="pb-card">
+      <h2>{{ 'PERSONAL_BACKUP.EXPORT_TITLE' | translate }}</h2>
+      <p>{{ 'PERSONAL_BACKUP.EXPORT_DESC' | translate }}</p>
+      <button
+        type="button"
+        class="pb-primary"
+        data-testid="pb-export"
+        [disabled]="isBusy()"
+        (click)="exportBackup()"
+      >
+        {{ 'PERSONAL_BACKUP.EXPORT' | translate }}
+      </button>
+      @if (savedPath(); as path) {
+        <p
+          class="pb-path"
+          data-testid="pb-saved-path"
+        >
+          {{ path }}
+        </p>
+      }
+    </article>
+
+    <article class="pb-card">
+      <h2>{{ 'PERSONAL_BACKUP.RESTORE_TITLE' | translate }}</h2>
+      <p>{{ 'PERSONAL_BACKUP.RESTORE_DESC' | translate }}</p>
+      <button
+        type="button"
+        class="pb-primary"
+        data-testid="pb-restore-trigger"
+        [disabled]="isBusy()"
+        (click)="openRestorePicker()"
+      >
+        {{ 'PERSONAL_BACKUP.RESTORE' | translate }}
+      </button>
+      <input
+        #restoreInput
+        hidden
+        type="file"
+        data-testid="pb-restore-input"
+        accept="application/json,.json"
+        [disabled]="isBusy()"
+        (change)="onRestoreFile($event)"
+      />
+    </article>
+  </section>
+
+  @if (isPreview) {
+    <section
+      class="pb-auto"
+      data-testid="pb-auto-section"
+    >
+      <div class="pb-auto-head">
+        <div>
+          <h2>{{ 'PERSONAL_BACKUP.AUTO_TITLE' | translate }}</h2>
+          <p
+            class="pb-auto-status"
+            [class.is-error]="autoStatus().kind === 'failed'"
+            [attr.data-auto-state]="autoStatus().kind"
+            data-testid="pb-auto-status"
+            role="status"
+            aria-live="polite"
+          >
+            {{ autoStatusText() | translate }}
+            @if (autoStatus().lastSuccess) {
+              <span> · {{ autoLastSuccessText() }}</span>
+            }
+          </p>
+          <p class="pb-hint">本机自动保存版本</p>
+        </div>
+        <button
+          type="button"
+          class="pb-primary"
+          data-testid="pb-auto-now"
+          [disabled]="isBusy()"
+          (click)="backupNow()"
+        >
+          {{ 'PERSONAL_BACKUP.AUTO_NOW' | translate }}
+        </button>
+        @if (autoVersions().length) {
+          <button
+            type="button"
+            class="pb-manage"
+            [class.pb-danger]="backupDeleteMode()"
+            data-testid="pb-auto-delete-toggle"
+            [disabled]="isBusy()"
+            (click)="toggleDeleteMode()"
+          >
+            @if (backupDeleteMode()) {
+              删除所选 ({{ selectedBackupIds().size }})
+            } @else {
+              管理版本
+            }
+          </button>
+          @if (backupDeleteMode()) {
+            <button
+              type="button"
+              class="pb-link"
+              data-testid="pb-auto-delete-cancel"
+              [disabled]="isBusy()"
+              (click)="cancelDeleteMode()"
+            >
+              取消
+            </button>
+          }
+        }
+      </div>
+      @if (autoStatus().error) {
+        <p
+          class="pb-message is-error"
+          data-testid="pb-auto-error"
+        >
+          {{ autoStatus().error }}
+        </p>
+      }
+      @if (autoVersions().length) {
+        <ul
+          class="pb-versions"
+          data-testid="pb-auto-versions"
+        >
+          @for (version of visibleVersions(); track version.id) {
+            <li
+              class="pb-version"
+              [class.is-invalid]="!version.valid"
+              [class.is-selecting]="backupDeleteMode()"
+              data-testid="pb-auto-version"
+            >
+              @if (backupDeleteMode()) {
+                <label class="pb-select">
+                  <input
+                    type="checkbox"
+                    data-testid="pb-auto-select"
+                    [checked]="isBackupSelected(version.id)"
+                    (change)="
+                      toggleBackupSelection(version.id, $any($event.target).checked)
+                    "
+                  />
+                </label>
+              }
+              <span
+                class="pb-version-time"
+                [attr.title]="autoVersionTime(version)"
+                >{{ autoVersionTime(version) }}</span
+              >
+              <span class="pb-version-kind">{{ autoVersionKind(version) }}</span>
+              <span class="pb-version-size">{{ autoVersionSize(version) }}</span>
+              @if (version.valid) {
+                <button
+                  type="button"
+                  class="pb-link"
+                  data-testid="pb-auto-restore"
+                  [disabled]="isBusy()"
+                  (click)="restoreAutoVersion(version)"
+                >
+                  {{ 'PERSONAL_BACKUP.AUTO_RESTORE' | translate }}
+                </button>
+              } @else {
+                <span class="pb-version-invalid">
+                  {{ 'PERSONAL_BACKUP.AUTO_CORRUPT' | translate }}
+                </span>
+              }
+            </li>
+          }
+        </ul>
+        @if (autoVersions().length > 5 && !backupDeleteMode()) {
+          <button
+            type="button"
+            class="pb-link pb-show-all"
+            data-testid="pb-versions-toggle"
+            [attr.aria-expanded]="showAllVersions()"
+            (click)="showAllVersions.set(!showAllVersions())"
+          >
+            {{
+              showAllVersions()
+                ? '收起历史版本'
+                : '查看全部版本（' + autoVersions().length + '）'
+            }}
+          </button>
+        }
+      } @else {
+        <p
+          class="pb-hint"
+          data-testid="pb-auto-empty"
+        >
+          {{ 'PERSONAL_BACKUP.AUTO_EMPTY' | translate }}
+        </p>
+      }
+    </section>
+  }
+
+  <details
+    class="pb-location"
+    data-testid="pb-location"
+  >
+    <summary>存储位置</summary>
+    <p>备份保存在本机，尚未启用云备份。</p>
+    <dl>
+      <dt>数据目录</dt>
+      <dd
+        class="pb-path"
+        data-testid="pb-data-path"
+      >
+        {{ dataPath() }}
+      </dd>
+      <dt>自动备份目录</dt>
+      <dd
+        class="pb-path"
+        data-testid="pb-auto-dir"
+      >
+        {{ autoBackupDirectory() }}
+      </dd>
+    </dl>
+  </details>
+</div>

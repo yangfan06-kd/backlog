@@ -1,0 +1,291 @@
+<div
+  class="pa-page"
+  data-testid="pa-page"
+>
+  <header class="pa-header">
+    <div>
+      <h1
+        #archiveHeading
+        tabindex="-1"
+        data-testid="pa-heading"
+      >
+        {{ 'PERSONAL_ARCHIVE.TITLE' | translate }}
+      </h1>
+    </div>
+    <div
+      class="pa-status"
+      data-testid="pa-status"
+      [attr.data-save-state]="saveState().kind"
+      role="status"
+      aria-live="polite"
+    >
+      @if (saveState().kind !== 'ready') {
+        {{ saveStateText() | translate }}
+      }
+      @if (saveStateError(); as error) {
+        <small>{{ error }}</small>
+      }
+    </div>
+  </header>
+
+  @if (targetNotice()) {
+    <p
+      class="pa-notice"
+      data-testid="pa-target-notice"
+      role="alert"
+    >
+      {{ targetNotice() | translate }}
+    </p>
+  }
+
+  @if (restoredProjectId(); as restoredId) {
+    <p
+      class="pa-restored"
+      data-testid="pa-restored"
+    >
+      {{ 'PERSONAL_ARCHIVE.RESTORED' | translate }}
+      <button
+        type="button"
+        class="pa-action"
+        data-testid="pa-open-progress"
+        (click)="openProgress(restoredId)"
+      >
+        {{ 'PERSONAL_ARCHIVE.OPEN_PROGRESS' | translate }}
+      </button>
+    </p>
+  }
+
+  <div
+    class="pa-view-tabs"
+    role="group"
+    aria-label="存档类型"
+  >
+    <button
+      type="button"
+      data-testid="pa-archive-tab"
+      [attr.aria-pressed]="!showTrash()"
+      (click)="showTrash.set(false)"
+      [disabled]="isSaving()"
+    >
+      已归档
+    </button>
+    <button
+      type="button"
+      data-testid="pa-trash-tab"
+      [attr.aria-pressed]="showTrash()"
+      (click)="showTrash.set(true)"
+      [disabled]="isSaving()"
+    >
+      回收站
+    </button>
+  </div>
+  @if (showTrash()) {
+    <section
+      class="pa-trash-list"
+      data-testid="pa-trash-list"
+    >
+      @for (project of trashProjects(); track project.id) {
+        <article
+          class="pa-card pa-trash-card"
+          data-testid="pa-trash-card"
+          [attr.data-project-id]="project.id"
+        >
+          <h2>{{ project.title }}</h2>
+          <button
+            type="button"
+            class="pa-action"
+            data-testid="pa-restore-deleted"
+            [disabled]="isSaving()"
+            (click)="restoreDeletedProject(project)"
+          >
+            恢复
+          </button>
+          <button
+            type="button"
+            class="pa-danger"
+            data-testid="pa-delete-forever"
+            [disabled]="isSaving()"
+            (click)="deleteForever(project)"
+          >
+            永久删除
+          </button>
+        </article>
+      } @empty {
+        <p class="pa-empty">回收站为空</p>
+      }
+    </section>
+  } @else if (loadState() === 'loading') {
+    <p
+      class="pa-loading"
+      data-testid="pa-loading"
+      role="status"
+    >
+      {{ 'PERSONAL_ARCHIVE.LOADING' | translate }}
+    </p>
+  } @else if (loadState() === 'error') {
+    <section
+      class="pa-load-error"
+      data-testid="pa-load-error"
+      role="alert"
+    >
+      <h2>{{ 'PERSONAL_ARCHIVE.LOAD_ERROR' | translate }}</h2>
+      <p>{{ loadError() }}</p>
+      <button
+        type="button"
+        class="pa-primary"
+        data-testid="pa-retry-load"
+        (click)="loadArchive()"
+      >
+        {{ 'PERSONAL_ARCHIVE.RETRY' | translate }}
+      </button>
+    </section>
+  } @else if (view().rows.length === 0) {
+    <section
+      class="pa-empty"
+      data-testid="pa-empty"
+    >
+      <h2>{{ 'PERSONAL_ARCHIVE.EMPTY.TITLE' | translate }}</h2>
+      <p>{{ 'PERSONAL_ARCHIVE.EMPTY.BODY' | translate }}</p>
+    </section>
+  } @else {
+    <section
+      class="pa-list"
+      data-testid="pa-list"
+    >
+      @for (row of view().rows; track row.project.id) {
+        <article
+          class="pa-card"
+          data-testid="pa-card"
+          [attr.data-project-id]="row.project.id"
+        >
+          <header class="pa-card-head">
+            <div class="pa-card-heading">
+              <h2 data-testid="pa-card-title">{{ row.project.title }}</h2>
+              <p class="pa-card-meta">
+                @if (row.doneOn !== null) {
+                  <span data-testid="pa-done-date"
+                    >{{ 'PERSONAL_ARCHIVE.DONE_ON' | translate }}
+                    {{ doneDate(row) }}</span
+                  >
+                } @else {
+                  <span data-testid="pa-date-unknown">{{
+                    'PERSONAL_ARCHIVE.DATE_UNKNOWN' | translate
+                  }}</span>
+                }
+                @if (!row.isDone) {
+                  <span
+                    class="pa-unmarked"
+                    data-testid="pa-unmarked"
+                    >{{ 'PERSONAL_ARCHIVE.UNMARKED' | translate }}</span
+                  >
+                }
+              </p>
+              <p
+                class="pa-card-meta"
+                data-testid="pa-remaining-count"
+              >
+                {{
+                  'PERSONAL_ARCHIVE.REMAINING' | translate: { count: remainingCount(row) }
+                }}
+              </p>
+            </div>
+            <div class="pa-card-actions">
+              <button
+                type="button"
+                class="pa-action"
+                data-testid="pa-expand"
+                [attr.aria-expanded]="isExpanded(row)"
+                [attr.aria-controls]="'pa-details-' + row.project.id"
+                (click)="toggleCard(row)"
+              >
+                {{
+                  (isExpanded(row)
+                    ? 'PERSONAL_ARCHIVE.COLLAPSE'
+                    : 'PERSONAL_ARCHIVE.EXPAND'
+                  ) | translate
+                }}
+              </button>
+              <button
+                type="button"
+                class="pa-primary"
+                data-testid="pa-restore"
+                [disabled]="isSaving()"
+                (click)="restoreProject(row)"
+              >
+                {{ 'PERSONAL_ARCHIVE.RESTORE' | translate }}
+              </button>
+            </div>
+          </header>
+
+          @if (isExpanded(row)) {
+            <section
+              class="pa-details"
+              data-testid="pa-details"
+              [attr.id]="'pa-details-' + row.project.id"
+            >
+              @if (row.entries.length === 0) {
+                <p
+                  class="pa-history-empty"
+                  data-testid="pa-history-empty"
+                >
+                  {{ 'PERSONAL_ARCHIVE.NO_HISTORY' | translate }}
+                </p>
+              } @else {
+                <div class="pa-dates">
+                  @for (day of row.dates; track day) {
+                    <section
+                      class="pa-day"
+                      data-testid="pa-day"
+                    >
+                      <h3>{{ dayLabel(day) }}</h3>
+                      @for (
+                        entry of row.entriesByDay.get(day) ?? [];
+                        track entry.entry.id
+                      ) {
+                        <article
+                          class="pa-entry"
+                          data-testid="pa-entry"
+                        >
+                          <p>
+                            <personal-text-view
+                              [text]="entry.entry.body"
+                              [format]="entry.entry.bodyFormat"
+                            ></personal-text-view>
+                          </p>
+                          <small>{{ sourceLabel(entry) | translate }}</small>
+                        </article>
+                      }
+                    </section>
+                  }
+                </div>
+              }
+
+              <section
+                class="pa-remaining"
+                data-testid="pa-remaining"
+              >
+                <h3>{{ 'PERSONAL_ARCHIVE.REMAINING_STEPS' | translate }}</h3>
+                @if (row.remainingSteps.length === 0) {
+                  <p data-testid="pa-no-remaining">
+                    {{ 'PERSONAL_ARCHIVE.NO_REMAINING' | translate }}
+                  </p>
+                } @else {
+                  <ol>
+                    @for (step of row.remainingSteps; track step.id) {
+                      <li data-testid="pa-remaining-step">
+                        <personal-text-view
+                          [text]="step.title"
+                          [format]="step.personalProgress?.stepFormat"
+                        ></personal-text-view>
+                      </li>
+                    }
+                  </ol>
+                }
+              </section>
+            </section>
+          }
+        </article>
+      }
+    </section>
+  }
+</div>

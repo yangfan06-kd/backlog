@@ -1,0 +1,282 @@
+import { IssueProviderKey } from '../issue/issue.model';
+import { EntityState } from '@ngrx/entity';
+import { TaskAttachment } from './task-attachment/task-attachment.model';
+// Import the unified Task type from plugin-api
+import { Task as PluginTask } from '@super-productivity/plugin-api';
+import type { PersonalProgressOnTask } from '../personal-progress/personal-progress.model';
+
+export enum HideSubTasksMode {
+  // Show is undefined
+  HideDone = 1,
+  HideAll = 2,
+}
+
+export enum TaskDetailTargetPanel {
+  Default = 'Default',
+  Attachments = 'Attachments',
+  Notes = 'Notes',
+  DONT_OPEN_PANEL = 'DONT_OPEN_PANEL',
+}
+
+export type DropListModelSource =
+  | 'UNDONE'
+  | 'DONE'
+  | 'BACKLOG'
+  | 'ADD_TASK_PANEL'
+  | 'OVERDUE'
+  | 'LATER_TODAY';
+
+// NOTE: do not change these, as they are used inside task repeat model directly
+// (new can be added though)
+export enum TaskReminderOptionId {
+  DoNotRemind = 'DoNotRemind',
+  AtStart = 'AtStart',
+  m5 = 'm5',
+  m10 = 'm10',
+  m15 = 'm15',
+  m30 = 'm30',
+  h1 = 'h1',
+  // long lead times; not offered where the option id itself is persisted
+  // (global default, repeat cfgs), see TASK_REMINDER_OPTIONS_WITHOUT_LONG_LEAD
+  d1 = 'd1',
+  d3 = 'd3',
+  w1 = 'w1',
+}
+
+export interface TaskReminderOption {
+  value: TaskReminderOptionId;
+  label: string;
+}
+
+export interface TimeSpentOnDayCopy {
+  [key: string]: number;
+}
+
+export interface TaskArchive extends EntityState<ArchiveTask> {
+  ids: string[];
+}
+
+export type TimeSpentOnDay = Readonly<TimeSpentOnDayCopy>;
+
+export interface IssueTaskTimeTracked {
+  [key: string]: number;
+}
+
+export interface IssueFieldsForTask {
+  // NOTE: keep in mind that the issueId is not unique (especially for github)
+  issueId?: string;
+  issueProviderId?: string;
+  issueType?: IssueProviderKey;
+  issueWasUpdated?: boolean;
+  // TODO remove null again
+  issueLastUpdated?: number | null;
+  issueAttachmentNr?: number;
+  issueTimeTracked?: IssueTaskTimeTracked;
+  issuePoints?: number;
+  issueLastSyncedValues?: Record<string, unknown>;
+}
+
+/** 1 = Low, 2 = Medium, 3 = High. Higher numbers are more important. */
+export type TaskPriority = 1 | 2 | 3;
+
+// Extend the plugin Task type with app-specific fields
+// Omit issue fields from PluginTask to avoid conflict with IssueFieldsForTask
+export interface TaskCopy
+  extends
+    Omit<
+      PluginTask,
+      | 'issueId'
+      | 'issueProviderId'
+      | 'issueType'
+      | 'issueWasUpdated'
+      | 'issueLastUpdated'
+      | 'issueAttachmentNr'
+      | 'issuePoints'
+    >,
+    IssueFieldsForTask {
+  // Override required fields that are optional in plugin type
+  projectId: string;
+  timeSpentOnDay: TimeSpentOnDay;
+
+  // Additional app-specific fields
+
+  /**
+   * Optional priority: 1/low = Low, 2/medium = Medium, 3/high = High. `undefined` and `null` both
+   * mean "no priority" and are treated the same by sorting and filtering.
+   * Preserve historical string encodings on reads; explicit changes write numbers.
+   * Clients predating priorities ignore the field. Older priority-aware builds
+   * accept only one encoding and must upgrade before syncing mixed data.
+   */
+  priority?: TaskPriority | 'high' | 'medium' | 'low' | null;
+
+  /**
+   * Scheduled time as Unix timestamp (ms). For tasks scheduled with a specific time.
+   *
+   * IMPORTANT: dueWithTime and dueDay follow a mutual exclusivity pattern:
+   * - When dueWithTime is set, dueDay MUST be undefined/null (not both set)
+   * - When reading, check dueWithTime FIRST (it takes priority over dueDay)
+   *
+   * @see ARCHITECTURE-DECISIONS.md Decision #1
+   */
+  dueWithTime?: number | null;
+
+  /**
+   * Scheduled date as ISO date string (YYYY-MM-DD). For tasks scheduled for all-day (no specific time).
+   *
+   * IMPORTANT: dueDay and dueWithTime follow a mutual exclusivity pattern:
+   * - When dueDay is set, dueWithTime should be undefined/null (for new data)
+   * - When dueWithTime is set, dueDay MUST be undefined/null (not both set)
+   * - When reading, check dueWithTime FIRST (it takes priority over dueDay)
+   * - Legacy data may have both fields set; handle via priority pattern
+   *
+   * @see ARCHITECTURE-DECISIONS.md Decision #1
+   */
+  dueDay?: string | null;
+  hasPlannedTime?: boolean;
+
+  /**
+   * Deadline date as ISO string (YYYY-MM-DD). For deadlines without a specific time.
+   * Follows mutual exclusivity with deadlineWithTime (same pattern as dueDay/dueWithTime).
+   */
+  deadlineDay?: string | null;
+
+  /**
+   * Deadline as Unix timestamp (ms). For deadlines with a specific time.
+   * When set, deadlineDay MUST be cleared.
+   */
+  deadlineWithTime?: number | null;
+
+  /** Reminder timestamp for the deadline. */
+  deadlineRemindAt?: number | null;
+  attachments: TaskAttachment[];
+  reminderId?: string | null;
+
+  /**
+   * Personal-progress records for this step. Optional: data written before this
+   * feature lacks it; read it through `personalTaskData()` for the runtime
+   * default. Completion entries and their receipts live here so completing a
+   * step and recording it are one Task update (one operation).
+   */
+  personalProgress?: PersonalProgressOnTask;
+
+  // Ensure type compatibility for internal fields
+  modified?: number;
+  doneOn?: number;
+
+  /**
+   * When a task was finished as "won't do" rather than completed: the
+   * `doneOn` of that finish. It only counts while it equals `doneOn` and the
+   * task is done, so read it through `isWontDoTask()`. Reopening clears
+   * `doneOn` and every completion stamps a new one, on clients predating the
+   * field too, so a value left behind does not count again; those clients show
+   * a plain done task. Exception: the plugin batch update writes `isDone`
+   * without touching `doneOn`, so a won't-do task it unchecks and re-checks is
+   * won't do again.
+   */
+  wontDoOn?: number;
+  parentId?: string;
+  remindAt?: number;
+  repeatCfgId?: string;
+  _hideSubTasksMode?: HideSubTasksMode;
+}
+
+/**
+ * standard task but with:
+ * * reminder removed, if any
+ * * sub tasks not included (but copied)
+ */
+// attachment data saved to it
+export type ArchiveTask = Readonly<TaskCopy>;
+
+export type Task = Readonly<TaskCopy>;
+
+export interface TaskWithReminderData extends Task {
+  readonly reminderData: { remindAt: number };
+  readonly parentData?: Task;
+  readonly isDeadlineReminder?: boolean;
+}
+
+export interface TaskWithReminder extends Task {
+  remindAt: number;
+}
+
+export interface TaskWithDueTime extends Task {
+  dueWithTime: number;
+}
+
+export interface TaskWithDueDay extends Task {
+  dueDay: string;
+}
+
+export type TaskPlannedWithDayOrTime = TaskWithDueTime | TaskWithDueDay;
+
+export interface TaskWithDeadlineDay extends Task {
+  deadlineDay: string;
+}
+
+export interface TaskWithDeadlineTime extends Task {
+  deadlineWithTime: number;
+}
+
+export type TaskWithDeadline = TaskWithDeadlineDay | TaskWithDeadlineTime;
+
+export interface TaskWithoutReminder extends Task {
+  remindAt: undefined;
+}
+
+export interface TaskWithPlannedForDayIndication extends TaskWithoutReminder {
+  plannedForDay: string;
+}
+
+export interface TaskWithSubTasks extends Task {
+  readonly subTasks: Task[];
+}
+
+// make title required and add optional property for possible related (parent) task
+export type IssueTask = Partial<Task> & {
+  title: string;
+  related_to?: string;
+};
+
+export const DEFAULT_TASK: Omit<TaskCopy, 'projectId'> = {
+  id: '',
+  subTaskIds: [],
+  timeSpentOnDay: {},
+  timeSpent: 0,
+  timeEstimate: 0,
+  isDone: false,
+  title: '',
+  tagIds: [],
+  created: Date.now(),
+
+  attachments: [],
+};
+
+export interface TaskState extends EntityState<Task> {
+  // overwrite entity model to avoid problems with typing
+  ids: string[];
+
+  // additional entities state properties
+  currentTaskId: string | null;
+  selectedTaskId: string | null;
+  taskDetailTargetPanel?: TaskDetailTargetPanel | null;
+  lastCurrentTaskId: string | null;
+  isDataLoaded: boolean;
+  /**
+   * iCal event IDs whose imported tasks were explicitly deleted, scoped by provider.
+   * Optional because persisted task state from older versions does not contain it.
+   * Provider deletion intentionally does not prune this commutative tombstone set:
+   * concurrent provider/task deletes must converge regardless of replay order.
+   * shortcut: grow-only — entries carry no timestamp, so nothing can age them out
+   * deterministically (deleting a daily recurring occurrence every day adds ~250
+   * entries/year; non-recurring dismissals stay relevant forever). If growth ever
+   * matters, record the dismissal day in the delete op payload and prune on replay.
+   */
+  dismissedCalendarAutoImportEventIdsByProvider?: Record<string, string[]>;
+}
+
+export interface WorklogTask extends Task {
+  dateStr: string;
+}
+
+export type SubmitTrigger = 'blur' | 'escape' | 'enter' | 'modEnter';

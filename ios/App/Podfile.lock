@@ -1,0 +1,83 @@
+PODS:
+  - Capacitor (8.5.3):
+    - CapacitorCordova
+  - CapacitorApp (8.1.2):
+    - Capacitor
+  - CapacitorBrowser (8.0.5):
+    - Capacitor
+  - CapacitorCordova (8.5.3)
+  - CapacitorFilesystem (8.1.4):
+    - Capacitor
+    - IONFilesystemLib (~> 2.0.0)
+  - CapacitorKeyboard (8.0.6):
+    - Capacitor
+  - CapacitorLocalNotifications (8.3.1):
+    - Capacitor
+  - CapacitorPluginSafeArea (5.0.1):
+    - Capacitor
+  - CapacitorShare (8.0.3):
+    - Capacitor
+  - CapacitorStatusBar (8.0.4):
+    - Capacitor
+  - CapawesomeCapacitorBackgroundTask (8.0.3):
+    - Capacitor
+  - IONFilesystemLib (2.0.1)
+
+DEPENDENCIES:
+  - "Capacitor (from `../../node_modules/@capacitor/ios`)"
+  - "CapacitorApp (from `../../node_modules/@capacitor/app`)"
+  - "CapacitorBrowser (from `../../node_modules/@capacitor/browser`)"
+  - "CapacitorCordova (from `../../node_modules/@capacitor/ios`)"
+  - "CapacitorFilesystem (from `../../node_modules/@capacitor/filesystem`)"
+  - "CapacitorKeyboard (from `../../node_modules/@capacitor/keyboard`)"
+  - "CapacitorLocalNotifications (from `../../node_modules/@capacitor/local-notifications`)"
+  - CapacitorPluginSafeArea (from `../../node_modules/capacitor-plugin-safe-area`)
+  - "CapacitorShare (from `../../node_modules/@capacitor/share`)"
+  - "CapacitorStatusBar (from `../../node_modules/@capacitor/status-bar`)"
+  - "CapawesomeCapacitorBackgroundTask (from `../../node_modules/@capawesome/capacitor-background-task`)"
+
+SPEC REPOS:
+  trunk:
+    - IONFilesystemLib
+
+EXTERNAL SOURCES:
+  Capacitor:
+    :path: "../../node_modules/@capacitor/ios"
+  CapacitorApp:
+    :path: "../../node_modules/@capacitor/app"
+  CapacitorBrowser:
+    :path: "../../node_modules/@capacitor/browser"
+  CapacitorCordova:
+    :path: "../../node_modules/@capacitor/ios"
+  CapacitorFilesystem:
+    :path: "../../node_modules/@capacitor/filesystem"
+  CapacitorKeyboard:
+    :path: "../../node_modules/@capacitor/keyboard"
+  CapacitorLocalNotifications:
+    :path: "../../node_modules/@capacitor/local-notifications"
+  CapacitorPluginSafeArea:
+    :path: "../../node_modules/capacitor-plugin-safe-area"
+  CapacitorShare:
+    :path: "../../node_modules/@capacitor/share"
+  CapacitorStatusBar:
+    :path: "../../node_modules/@capacitor/status-bar"
+  CapawesomeCapacitorBackgroundTask:
+    :path: "../../node_modules/@capawesome/capacitor-background-task"
+
+SPEC CHECKSUMS:
+  Capacitor: 2f67eaeb8ed79909cd35b5e7439a5c2a9ca58e0f
+  CapacitorApp: 7b7e43debe505bc61beedb83796aa1368c86078b
+  CapacitorBrowser: f94f92654e92a97981bf346b3681af76527dace0
+  CapacitorCordova: 0b7326439c7a09fc5d20eced5e0dab986327a493
+  CapacitorFilesystem: 17ee1862a45ef2e5012311a87e18de1d45a6811b
+  CapacitorKeyboard: f9e85e685082e9f63404de15db4a4291448b0912
+  CapacitorLocalNotifications: e0747a329ddde3074d52dc74a003688af90e42be
+  CapacitorPluginSafeArea: 874619c00586248f1694210e72038123d422c2d9
+  CapacitorShare: 5b5e53347556bee89ae6163ed20b5b3c25fe75f1
+  CapacitorStatusBar: ff844df1f126da6c4fbc4028272425fa3a91e7e3
+  CapawesomeCapacitorBackgroundTask: 4aa93c0743a17df5b34d2ede15689afc0fc22245
+  IONFilesystemLib: 306469e4c563f61de82d7bca2bbfed9e64d1b2d2
+
+PODFILE CHECKSUM: 4409a51ed03f4ba0e523ba9e063dae69c327d22a
+
+COCOAPODS: 1.17.0

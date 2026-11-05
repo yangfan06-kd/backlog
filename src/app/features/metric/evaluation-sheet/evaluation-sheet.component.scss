@@ -1,0 +1,53 @@
+@use '../../../../styles/_globals.scss' as *;
+
+:host {
+  --eval-card-gap: 12px;
+  --eval-border-radius: var(--card-border-radius);
+  box-shadow: none;
+  gap: var(--eval-card-gap);
+  display: flex !important;
+  flex-direction: column;
+  text-align: left;
+}
+
+.radio-group,
+reflection-note {
+  padding: 12px;
+  border-radius: var(--eval-border-radius);
+  // Flat cards: hairline border instead of a resting shadow (matches daily-summary).
+  border: 1px solid var(--extra-border-color);
+  background-color: var(--card-bg);
+}
+
+reflection-note {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s);
+
+  mat-form-field {
+    width: 100%;
+  }
+}
+
+.radio-group {
+  padding: 12px;
+
+  > label {
+    display: block;
+    margin-bottom: var(--s);
+    text-align: left;
+    font-weight: 500;
+  }
+
+  mat-radio-group {
+    display: flex;
+    gap: var(--s);
+  }
+
+  .hint {
+    text-align: left;
+    margin-top: var(--s);
+    font-size: 0.75em;
+    opacity: 0.6;
+  }
+}

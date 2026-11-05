@@ -1,0 +1,45 @@
+<div
+  class="pabout-page"
+  data-testid="pabout-page"
+>
+  <header class="pabout-header">
+    <h1 data-testid="pabout-heading">{{ name }}</h1>
+    <p
+      class="pabout-version"
+      data-testid="pabout-version"
+    >
+      {{ 'PERSONAL_ABOUT.VERSION' | translate }}
+      @if (version(); as currentVersion) {
+        <span>{{ currentVersion }}</span>
+      }
+    </p>
+  </header>
+
+  <section class="pabout-card">
+    <h2>{{ 'PERSONAL_ABOUT.SCOPE_TITLE' | translate }}</h2>
+    <p>{{ 'PERSONAL_ABOUT.SCOPE' | translate }}</p>
+    <ul>
+      <li>{{ 'PERSONAL_ABOUT.CAPABILITY_PROGRESS' | translate }}</li>
+      <li>{{ 'PERSONAL_ABOUT.CAPABILITY_ROUTINE' | translate }}</li>
+      <li>{{ 'PERSONAL_ABOUT.CAPABILITY_ARCHIVE' | translate }}</li>
+      <li>{{ 'PERSONAL_ABOUT.CAPABILITY_BACKUP' | translate }}</li>
+    </ul>
+  </section>
+
+  <section class="pabout-card">
+    <h2>{{ 'PERSONAL_ABOUT.DATA_TITLE' | translate }}</h2>
+    <p>{{ 'PERSONAL_ABOUT.DATA_DESC' | translate }}</p>
+    <p
+      class="pabout-path"
+      data-testid="pabout-data-path"
+    >
+      {{ dataPath() }}
+    </p>
+  </section>
+
+  <section class="pabout-card">
+    <h2>{{ 'PERSONAL_ABOUT.LICENSE_TITLE' | translate }}</h2>
+    <p>{{ 'PERSONAL_ABOUT.LICENSE' | translate }}</p>
+    <p>{{ 'PERSONAL_ABOUT.NO_CLOUD' | translate }}</p>
+  </section>
+</div>

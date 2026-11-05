@@ -1,0 +1,35 @@
+@use '../../../../../styles/_globals.scss' as *;
+@use '../task-context-menu-touch-fix.scss';
+@use '../../shared-tag-project-styles';
+@use '../../menu-item-styles';
+
+.quick-access {
+  @include quickAccessRow;
+
+  > button {
+    @include quickAccessBtn(var(--state-hover));
+  }
+}
+
+.quick-access-label {
+  @include quickAccessLabel;
+}
+
+.label {
+  display: block;
+  text-align: center;
+}
+
+[mat-menu-item] {
+  @include mq(xs, max) {
+    padding-right: 12px;
+  }
+
+  mat-icon {
+    pointer-events: none;
+
+    @include mq(xs, max) {
+      margin-right: 12px;
+    }
+  }
+}

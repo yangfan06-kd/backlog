@@ -1,0 +1,15 @@
+.project-section {
+  margin-top: var(--s);
+  margin-bottom: var(--s3);
+}
+
+// Keeps the project colour as an accent next to the collapsible heading.
+collapsible.project-section {
+  border-left: 2px solid var(--extra-border-color);
+}
+
+.project-time {
+  white-space: nowrap;
+  font-size: var(--font-size-sm);
+  color: var(--text-color-muted);
+}
