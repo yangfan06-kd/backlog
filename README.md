@@ -1,35 +1,42 @@
-﻿# Project Progress / 项目进展
+﻿# 项目进展（Project Progress）
 
-A local-first Windows desktop app for personal projects, daily progress notes, routines, memos and a four-quadrant overview. This repository is the source edition of the **0.1.0-beta.19** Windows x64 trial build.
+一个面向 Windows 的本机优先个人项目管理工具，用来整理项目、推进步骤、记录每天实际发生的事，并用四象限总览查看全局。
 
-## Download
+当前公开试用版：**0.1.0-beta.19（Windows x64）**。
 
-- Latest Windows x64 trial package: see the **Releases** page.
-- The release ZIP contains the NSIS setup, installation notes, version information, SHA-256 checksums and open-source notices.
-- The package is unsigned. Windows may show an unknown publisher warning.
-- This is a trial build for Windows x64. Keep a complete backup before upgrading in place.
+> 这是试用版，安装包未签名。升级或重装前，请先导出完整备份并关闭应用。
 
-## What is in this edition
+## 下载与安装
 
-- Four-quadrant project overview and future planning dates
-- Project progress with ordered steps, completion history and backfill
-- Routines with an editable history table
-- Memos with optional reminders
-- Per-project archive, recoverable trash and local automatic backups
-- Local-first storage; no account or cloud service is required
-- Simplified light and dark themes
+- 安装包请从 [GitHub Releases](https://github.com/yangfan06-kd/backlog/releases) 下载。
+- 解压发布压缩包，运行 `ProjectProgress-Setup-<版本>-x64.exe`。
+- 默认程序目录：`%LOCALAPPDATA%\Programs\ProjectProgress`
+- 用户数据保存在程序目录相邻的 `ProjectProgress-data` 目录中。
+- 卸载程序只移除程序，不会删除相邻的数据目录。
+- 升级时保持原安装位置覆盖安装即可；重要数据请先导出完整备份。
 
-## Install and update
+## 主要功能
 
-1. Download and unzip the Windows x64 release package.
-2. Run `ProjectProgress-Setup-<version>-x64.exe`.
-3. The default program directory is `%LOCALAPPDATA%\Programs\ProjectProgress`; user data is kept in the sibling `ProjectProgress-data` directory.
-4. To upgrade, export a complete backup, close the app, run a newer setup over the same installation directory, and verify the version and data.
-5. Uninstalling removes the program but keeps the adjacent data directory.
+- **四象限总览**：按紧急、重要程度整理项目，快速看到各象限中的项目和剩余步骤。
+- **项目进展**：项目下按顺序维护步骤，完成后生成当天的实际完成记录。
+- **未来计划日期**：计划日期和实际完成记录分开，未来项目不会提前算作已完成。
+- **补记与历史记录**：可以补写过去某天的记录，也可以在允许时直接编辑历史记录。
+- **步骤撤回**：每条来自步骤完成的历史记录都可以单独退回剩余步骤。
+- **常态事项**：维护长期反复发生的事项，按日期表格查看和补记。
+- **备忘**：记录独立的备忘事项，可选提醒时间。
+- **项目归档与回收站**：完成后归档；删除的项目先进入回收站，也可以永久删除。
+- **本机自动备份**：自动保留本机备份版本，支持恢复和批量删除旧备份。
+- **本机优先**：无需账号，不依赖云服务；数据默认保存在本机。
 
-## Build from source
+## 数据与更新
 
-Prerequisites: Node.js, npm and the repository's Electron dependencies on Windows.
+- 当前版本没有云备份、跨设备同步或手机客户端。
+- 自动备份和业务数据在同一台电脑上，不能替代异地备份；重要资料请定期导出完整备份。
+- 软件没有在线自动更新器，更新方式是用更高版本的安装包覆盖安装。
+
+## 从源码构建
+
+需要 Node.js、npm 和 Windows 上的 Electron 依赖。
 
 ```powershell
 npm ci
@@ -39,17 +46,22 @@ node tools/project1/build-public.cjs 0.1.0-beta.19
 node tools/project1/prepare-delivery.cjs 0.1.0-beta.19
 ```
 
-The build scripts are project-specific and expect the project checkout layout used by this edition. Generated outputs and installation media are intentionally not committed.
+构建产物、安装包和用户数据不会提交到源码仓库。
 
-## Project origin and license
+## 项目来源与许可
 
-This edition is a limited fork and integration built on top of [Super Productivity](https://github.com/super-productivity/super-productivity), which is distributed under the MIT license. The upstream copyright and license notices are retained in `LICENSE` and in the generated third-party notices.
+本项目是在 [Super Productivity](https://github.com/super-productivity/super-productivity) 基础上进行有限定制和集成开发的版本。Super Productivity 使用 MIT 许可；上游版权与许可声明保留在仓库的 `LICENSE` 和发布包内的第三方声明中。
 
-The additional project-specific code in this repository is provided under the same MIT license unless a file states otherwise. See `LICENSE`, `THIRD-PARTY-NOTICES.txt` in the release package, and the upstream project for attribution.
+本项目新增代码除文件另有说明外，同样按 MIT 许可提供。使用、修改和再分发时请保留相关版权与许可声明。
 
-## Status and limitations
+## 当前限制
 
-- Windows x64 trial edition; other platforms and ARM64 are not covered by this trial.
-- No cloud account, cross-device sync, mobile client or signed installer in this edition.
-- Do not use a trial build as the only copy of important data.
-- The release page is the canonical place for downloadable builds; source snapshots are provided for transparency and reproducibility.
+- 仅面向 Windows x64 试用，不覆盖 ARM64 和其他平台。
+- 安装包未签名，Windows 可能显示“未知发布者”。
+- 云备份、跨设备同步、移动端、在线更新和账号体系尚未提供。
+- 这是试用版，不建议把唯一一份重要数据只放在本机。
+
+## 链接
+
+- 源码：https://github.com/yangfan06-kd/backlog
+- 发布页：https://github.com/yangfan06-kd/backlog/releases
