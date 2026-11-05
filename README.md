@@ -28,6 +28,17 @@
 - **本机自动备份**：自动保留本机备份版本，支持恢复和批量删除旧备份。
 - **本机优先**：无需账号，不依赖云服务；数据默认保存在本机。
 
+## 技术栈
+
+- **桌面壳**：Electron 44.7.0，主进程 + 安全 preload + 渲染进程，关闭渲染进程 Node 集成并启用上下文隔离。
+- **前端框架**：Angular 22.2.2，standalone components、signals、依赖注入；Angular Material / CDK 22.2.2。
+- **状态与数据流**：NgRx Store / Effects 22.0.1；RxJS 7.8.2；操作日志（op-log）记录本地变更。
+- **本机存储**：IndexedDB（idb 8.0.3）保存操作日志、归档和缓存；自动备份与完整备份为 JSON 文件。
+- **语言与样式**：TypeScript 6.0.3；SCSS 设计变量与自定义样式层；ngx-translate 17 提供中英文文案。
+- **构建与安装**：Node.js 22（`.nvmrc` 为 v22.23.3）；npm 11；Electron Builder 26.16.1 生成 NSIS Windows x64 安装包。
+- **测试**：Playwright 1.59.1 做浏览器/Electron 流程测试；Jasmine + Karma 做 Angular 单元测试。
+- **移动端保留能力**：上游的 Capacitor 8.5.3 相关代码仍保留在仓库中，但当前 Windows 试用版不包含移动端交付。
+
 ## 数据与更新
 
 - 当前版本没有云备份、跨设备同步或手机客户端。
