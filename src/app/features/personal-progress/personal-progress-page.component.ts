@@ -220,10 +220,13 @@ export class PersonalProgressPageComponent implements OnInit {
     }
     const dateCount = visibleHistoryCount + 1;
     if (dateCount === 1) {
-      return `var(--pp-project-width) minmax(var(--pp-day-min-width, 96px), 1fr) minmax(var(--pp-steps-width), 1fr)`;
+      return `minmax(var(--pp-project-width), 1fr) minmax(var(--pp-day-min-width, 96px), 1fr) minmax(var(--pp-steps-width), 1fr)`;
     }
     return `var(--pp-project-width) repeat(${dateCount}, minmax(var(--pp-day-min-width, 96px), 1fr)) var(--pp-steps-width)`;
   });
+  readonly isSingleDateLayout = computed(
+    () => !this.recordExpanded() && this.displayHistoryDates().length === 0,
+  );
   readonly recordExpanded = signal(false);
   readonly canExpandRecords = computed(() => this.historyDates().length > 0);
   readonly todayLabel = computed(
