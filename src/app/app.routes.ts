@@ -125,6 +125,18 @@ export const APP_ROUTES: Routes = [
     data: { page: 'contrast-test' },
   },
   {
+    path: 'personal-search',
+    loadComponent: () =>
+      import('./routes/pages.routes').then((m) => m.PersonalSearchPageComponent),
+    data: { page: 'personal-search' },
+  },
+  {
+    path: 'personal-review',
+    loadComponent: () =>
+      import('./routes/pages.routes').then((m) => m.PersonalReviewPageComponent),
+    data: { page: 'personal-review' },
+  },
+  {
     // Internal first-version entry for the minimal personal-progress loop.
     path: 'personal-progress',
     loadComponent: () =>

@@ -6,6 +6,8 @@ import { PERSONAL_PREVIEW_MODE } from './personal-preview-mode';
 
 const PREVIEW_ROUTES = [
   '/personal-overview',
+  '/personal-search',
+  '/personal-review',
   '/personal-progress',
   '/personal-routine',
   '/personal-archive',

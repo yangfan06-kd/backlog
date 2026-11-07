@@ -436,18 +436,7 @@
   container-type: inline-size;
 }
 .app-container.is-preview-mode .pp-board {
-  --pp-steps-width: max(
-    280px,
-    calc(
-      100cqw - var(--pp-project-width) - var(--pp-today-width) - var(--pp-day-width) *
-        min(var(--pp-date-count), 1)
-    )
-  );
-  width: calc(
-    var(--pp-project-width) + var(--pp-day-width) * var(--pp-date-count) +
-      var(--pp-today-width) + var(--pp-steps-width)
-  );
-  min-width: 0;
+  --pp-steps-width: 240px;
 }
 .app-container.is-preview-mode .pp-project-actions {
   display: grid;
@@ -468,17 +457,6 @@
 .app-container.is-preview-mode .pp-project-actions personal-project-tools {
   grid-area: menu;
 }
-@media (max-width: 1100px) {
-  .app-container.is-preview-mode .pp-board {
-    --pp-steps-width: max(
-      220px,
-      calc(
-        100cqw - var(--pp-project-width) - var(--pp-today-width) - var(--pp-day-width) *
-          min(var(--pp-date-count), 1)
-      )
-    );
-  }
-}
 @container (max-width: 540px) {
   .app-container.is-preview-mode .pp-board .pp-today-col,
   .app-container.is-preview-mode .pp-board .pp-steps-col {
@@ -490,14 +468,15 @@
 // Shared drag preview used by table rows; it remains legible outside table layout.
 .project1-row-preview {
   box-sizing: border-box;
-  width: 260px;
-  padding: var(--s2);
+  width: 190px;
+  padding: var(--s);
   border: 1px solid var(--separator-color);
   border-radius: var(--radius-sm);
   box-shadow: var(--whiteframe-shadow-4dp);
   background: var(--card-bg);
   color: var(--text-color);
   font-family: var(--project1-font-stack);
+  font-size: var(--font-size-sm);
 }
 .app-container.is-preview-mode .cdk-drag-placeholder {
   opacity: 0.3;

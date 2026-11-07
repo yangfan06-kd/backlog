@@ -12,6 +12,8 @@ export { PersonalProgressPageComponent } from '../features/personal-progress/per
 export { PersonalOverviewPageComponent } from '../features/personal-overview/personal-overview-page.component';
 export { PersonalRoutinePageComponent } from '../features/personal-routine/personal-routine-page.component';
 export { PersonalMemoPageComponent } from '../features/personal-memo/personal-memo-page.component';
+export { PersonalSearchPageComponent } from '../features/personal-search/personal-search-page.component';
+export { PersonalReviewPageComponent } from '../features/personal-search/personal-review-page.component';
 export { PersonalArchivePageComponent } from '../features/personal-archive/personal-archive-page.component';
 export { PersonalBackupPageComponent } from '../features/personal-workspace/personal-backup-page.component';
 export { PersonalAboutPageComponent } from '../features/personal-workspace/personal-about-page.component';

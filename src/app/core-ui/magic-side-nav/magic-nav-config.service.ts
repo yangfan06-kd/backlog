@@ -28,6 +28,7 @@ import { NavConfig, NavItem } from './magic-side-nav.model';
 import { NAV_SECTION_ICON } from './nav-section-icons.const';
 import { PluginBridgeService } from '../../plugins/plugin-bridge.service';
 import { PluginService } from '../../plugins/plugin.service';
+import { PersonalQuickCaptureService } from '../../features/personal-search/personal-quick-capture.service';
 import { lsGetBoolean, lsSetItem } from '../../util/ls-util';
 import { MenuTreeService } from '../../features/menu-tree/menu-tree.service';
 import { Router } from '@angular/router';
@@ -57,6 +58,7 @@ export class MagicNavConfigService {
   private readonly _configService = inject(GlobalConfigService);
   private readonly _snackService = inject(SnackService);
   private readonly _router = inject(Router);
+  private readonly _quickCapture = inject(PersonalQuickCaptureService);
   private readonly _isPreviewMode = inject(PERSONAL_PREVIEW_MODE);
 
   // Simple state signals
@@ -154,6 +156,13 @@ export class MagicNavConfigService {
         items: [
           {
             type: 'route',
+            id: 'personal-search',
+            label: '搜索',
+            icon: 'search',
+            route: '/personal-search',
+          },
+          {
+            type: 'route',
             id: 'personal-overview',
             label: 'PERSONAL_OVERVIEW.TITLE',
             icon: 'grid_view',
@@ -179,6 +188,20 @@ export class MagicNavConfigService {
             label: 'PERSONAL_MEMO.NAV',
             icon: 'sticky_note_2',
             route: '/personal-memo',
+          },
+          {
+            type: 'route',
+            id: 'personal-review',
+            label: '复盘',
+            icon: 'history',
+            route: '/personal-review',
+          },
+          {
+            type: 'action',
+            id: 'personal-quick-capture',
+            label: '快记',
+            icon: 'note_add',
+            action: () => this._quickCapture.open(),
           },
           {
             type: 'route',

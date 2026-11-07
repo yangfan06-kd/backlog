@@ -244,12 +244,9 @@ test('UI-015 browser progress table has sticky regions, date labels and stress l
   );
 
   const dates = page.getByTestId('pp-date');
-  await expect(dates).toHaveCount(49);
+  await expect(dates).toHaveCount(2);
   await expect(page.locator('[data-testid="pp-date"][data-day="2025-12-31"]')).toHaveText(
     '2025.12.31',
-  );
-  await expect(page.locator('[data-testid="pp-date"][data-day="2026-08-01"]')).toHaveText(
-    '8.1',
   );
   await expect(page.locator('[data-testid="pp-date"]').last()).toContainText(
     /^\d{1,2}\.\d{1,2}$/,
@@ -286,19 +283,9 @@ test('UI-015 browser progress table has sticky regions, date labels and stress l
   expect(await boxX(headerProject)).toBeLessThan(await boxX(headerToday));
   expect(await boxX(headerToday)).toBeLessThan(await boxX(headerSteps));
 
-  const before = {
-    project: await boxX(rowProject),
-    today: await boxX(rowToday),
-    steps: await boxX(rowSteps),
-  };
-  await board.evaluate((el) => {
-    el.scrollLeft = el.scrollWidth;
-  });
-  await page.waitForTimeout(150);
-  expect(await board.evaluate((el) => el.scrollLeft)).toBeGreaterThan(0);
-  expect(Math.abs((await boxX(rowProject)) - before.project)).toBeLessThanOrEqual(2);
-  expect(Math.abs((await boxX(rowToday)) - before.today)).toBeLessThanOrEqual(2);
-  expect(Math.abs((await boxX(rowSteps)) - before.steps)).toBeLessThanOrEqual(2);
+  expect(
+    await board.evaluate((el) => el.scrollWidth - el.clientWidth),
+  ).toBeLessThanOrEqual(1);
   const dateAlignment = await page.evaluate(() => {
     const headerCells = [...document.querySelectorAll('thead th.pp-day-col')];
     const rowCells = [...document.querySelectorAll('tbody tr:first-child td.pp-day-col')];
@@ -367,13 +354,6 @@ test('UI-015 browser progress table has sticky regions, date labels and stress l
   expect(Math.abs((await boxY(headerToday)) - boardY)).toBeLessThanOrEqual(2);
   expect(Math.abs((await boxY(headerSteps)) - boardY)).toBeLessThanOrEqual(2);
 
-  const keyboardBefore = await board.evaluate((el) => el.scrollLeft);
-  await board.focus();
-  await page.keyboard.press('ArrowRight');
-  await expect
-    .poll(async () => board.evaluate((el) => el.scrollLeft), { timeout: 5_000 })
-    .toBeGreaterThan(keyboardBefore);
-
   for (const width of [1280, 1440, 1600]) {
     await page.setViewportSize({ width, height: 1000 });
     await board.evaluate((el) => {
@@ -396,23 +376,6 @@ test('UI-015 browser progress table has sticky regions, date labels and stress l
       )
       .toBeLessThanOrEqual(1);
   }
-
-  await page.setViewportSize({ width: 1280, height: 1000 });
-  await board.evaluate((el) => {
-    el.scrollLeft = 0;
-  });
-  await page.screenshot({
-    path: path.join(screenshotDir, 'ui15-horizontal-start.png'),
-    animations: 'disabled',
-  });
-  await board.evaluate((el) => {
-    el.scrollLeft = el.scrollWidth;
-  });
-  await page.waitForTimeout(100);
-  await page.screenshot({
-    path: path.join(screenshotDir, 'ui15-horizontal-end.png'),
-    animations: 'disabled',
-  });
 
   await page.evaluate(() => document.body.classList.add('isDarkTheme'));
   await page.setViewportSize({ width: 1440, height: 1000 });
@@ -455,7 +418,14 @@ test('UI-015 browser progress table has sticky regions, date labels and stress l
   await page.getByTestId('pp-backfill').click();
   await expect(page.getByTestId('pp-entry-day')).toBeFocused();
 
-  await page.getByTestId('pp-collapse-all').click();
+  const rowToggles = page.getByTestId('pp-project-toggle');
+  await expect(rowToggles).toHaveCount(40);
+  for (let index = 0; index < 40; index++) {
+    const toggle = rowToggles.nth(index);
+    if ((await toggle.getAttribute('aria-expanded')) === 'true') {
+      await toggle.click();
+    }
+  }
   await expect(page.getByTestId('pp-date')).toHaveCount(1);
   await expect(page.locator('.pp-day-col.is-today').first()).toBeVisible();
   await expect(page.getByTestId('pp-project-row')).toHaveCount(40);

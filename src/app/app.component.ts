@@ -36,7 +36,7 @@ import { resolveBgImageToDataUrl } from './core/theme/resolve-bg-image-to-data-u
 import { LanguageService } from './core/language/language.service';
 import { WorkContextService } from './features/work-context/work-context.service';
 import { SyncTriggerService } from './imex/sync/sync-trigger.service';
-import { ActivatedRoute, RouterOutlet } from '@angular/router';
+import { ActivatedRoute, Router, RouterOutlet } from '@angular/router';
 import { first, take } from 'rxjs/operators';
 
 import { recordSearchNavDebug } from './util/search-nav-debug';
@@ -84,6 +84,8 @@ import { IosShareService } from './features/tasks/ios-share/ios-share.service';
 import { AgentCaptureService } from './features/tasks/agent-capture/agent-capture.service';
 import { PERSONAL_PREVIEW_MODE } from './features/personal-workspace/personal-preview-mode';
 import { PersonalPreviewRouteService } from './features/personal-workspace/personal-preview-route.service';
+import { PersonalQuickCapturePanelComponent } from './features/personal-search/personal-quick-capture-panel.component';
+import { PersonalQuickCaptureService } from './features/personal-search/personal-quick-capture.service';
 import { PersonalMemoReminderService } from './features/personal-memo/personal-memo-reminder.service';
 import { ExampleTasksService } from './core/example-tasks/example-tasks.service';
 import { KeyboardLayoutService } from './core/keyboard-layout/keyboard-layout.service';
@@ -132,6 +134,7 @@ interface BeforeInstallPromptEvent extends Event {
     MobileBottomNavComponent,
     OnboardingHintComponent,
     TaskMultiSelectBarComponent,
+    PersonalQuickCapturePanelComponent,
   ],
 })
 export class AppComponent implements OnDestroy, AfterViewInit {
@@ -144,6 +147,8 @@ export class AppComponent implements OnDestroy, AfterViewInit {
   private _previewRouteService = inject(PersonalPreviewRouteService);
 
   readonly isPreviewMode = inject(PERSONAL_PREVIEW_MODE);
+  private readonly _router = inject(Router);
+  readonly quickCapture = inject(PersonalQuickCaptureService);
   /** Sized above the iOS keyboard; null everywhere else. See IosKeyboardService. */
   readonly iosShellHeight = this._iosKeyboardService.shellHeight;
   private _languageService = inject(LanguageService);
@@ -318,6 +323,14 @@ export class AppComponent implements OnDestroy, AfterViewInit {
       requestIdleCallback(() => this._keyboardLayoutService.saveUserLayout());
     } else {
       setTimeout(() => this._keyboardLayoutService.saveUserLayout(), 0);
+    }
+  }
+
+  @HostListener('document:keydown', ['$event'])
+  onGlobalKeydown(event: KeyboardEvent): void {
+    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
+      event.preventDefault();
+      void this._router.navigate(['/personal-search']);
     }
   }
 

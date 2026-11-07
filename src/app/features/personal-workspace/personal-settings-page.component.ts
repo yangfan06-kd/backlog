@@ -34,6 +34,48 @@ import { GlobalThemeService, DarkModeCfg } from '../../core/theme/global-theme.s
           }
         </div>
       </section>
+      <section class="ps-card">
+        <h2>操作指引</h2>
+        <div
+          class="ps-shortcuts"
+          data-testid="ps-shortcuts"
+        >
+          <div class="ps-shortcut-group">
+            <p class="ps-shortcut-label">全局</p>
+            <div class="ps-shortcut-row">
+              <span>打开搜索</span>
+              <span class="ps-keys"><kbd>Ctrl</kbd><kbd>K</kbd></span>
+            </div>
+          </div>
+          <div class="ps-shortcut-group">
+            <p class="ps-shortcut-label">搜索页</p>
+            <div class="ps-shortcut-row">
+              <span>选择结果</span>
+              <span class="ps-keys"><kbd>↑</kbd><kbd>↓</kbd></span>
+            </div>
+            <div class="ps-shortcut-row">
+              <span>打开结果</span>
+              <span class="ps-keys"><kbd>Enter</kbd></span>
+            </div>
+            <div class="ps-shortcut-row">
+              <span>清空搜索</span>
+              <span class="ps-keys"><kbd>Esc</kbd></span>
+            </div>
+          </div>
+          <div class="ps-shortcut-group">
+            <p class="ps-shortcut-label">快记</p>
+            <div class="ps-shortcut-row">
+              <span>保存</span>
+              <span class="ps-keys"><kbd>Ctrl</kbd><kbd>Enter</kbd></span>
+            </div>
+            <div class="ps-shortcut-row">
+              <span>关闭</span>
+              <span class="ps-keys"><kbd>Esc</kbd></span>
+            </div>
+          </div>
+        </div>
+        <p class="ps-hint">当前快捷键固定；后续可支持自定义。</p>
+      </section>
     </div>
   `,
   styles: [
@@ -78,6 +120,59 @@ import { GlobalThemeService, DarkModeCfg } from '../../core/theme/global-theme.s
         font-weight: var(--font-weight-semibold);
       }
 
+      .ps-card + .ps-card {
+        margin-top: var(--s2);
+      }
+
+      .ps-shortcuts {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: var(--s2);
+      }
+
+      .ps-shortcut-group {
+        min-width: 0;
+      }
+
+      .ps-shortcut-label {
+        margin: 0 0 var(--s-half);
+        color: var(--text-color-muted);
+        font-size: var(--font-size-xs);
+        font-weight: var(--font-weight-semibold);
+        letter-spacing: 0.06em;
+      }
+
+      .ps-shortcut-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--s);
+        min-height: 30px;
+        color: var(--text-color);
+        font-size: var(--font-size-xs);
+      }
+
+      .ps-keys {
+        display: inline-flex;
+        flex: 0 0 auto;
+        gap: 3px;
+      }
+
+      .ps-keys kbd {
+        display: inline-flex;
+        min-width: 20px;
+        min-height: 20px;
+        align-items: center;
+        justify-content: center;
+        padding: 0 5px;
+        border: 1px solid var(--separator-color);
+        border-radius: 4px;
+        background: var(--bg);
+        color: var(--text-color-muted);
+        font-family: inherit;
+        font-size: 10px;
+      }
+
       .ps-theme-options {
         display: inline-flex;
         gap: 0;
@@ -113,6 +208,10 @@ import { GlobalThemeService, DarkModeCfg } from '../../core/theme/global-theme.s
       @media (max-width: 700px) {
         :host {
           padding: var(--s2);
+        }
+
+        .ps-shortcuts {
+          grid-template-columns: 1fr;
         }
       }
     `,

@@ -9,6 +9,7 @@ import {
   inject,
   signal,
   viewChild,
+  viewChildren,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -17,7 +18,10 @@ import {
   CdkDragPreview,
   CdkDragHandle,
   CdkDropList,
+  CdkDropListGroup,
   CdkDragDrop,
+  CdkDragEnd,
+  CdkDragMove,
   moveItemInArray,
 } from '@angular/cdk/drag-drop';
 import { PersonalOverviewOrderService } from '../personal-overview/personal-overview-order.service';
@@ -71,6 +75,7 @@ import { PersonalBackupFacade } from '../personal-workspace/personal-backup.faca
 import { PersonalAutoBackupService } from '../personal-workspace/personal-auto-backup.service';
 import { PERSONAL_PREVIEW_MODE } from '../personal-workspace/personal-preview-mode';
 import { PersonalProjectToolsComponent } from './personal-project-tools.component';
+import { PersonalFolder, PersonalFolderService } from './personal-folder.service';
 import {
   PersonalProjectManagementService,
   RenameProjectInput,
@@ -135,6 +140,7 @@ interface DraftPrompt {
     CdkDragPreview,
     CdkDragHandle,
     CdkDropList,
+    CdkDropListGroup,
     PersonalRichTextEditorComponent,
     PersonalTextViewComponent,
     PersonalProjectToolsComponent,
@@ -158,6 +164,7 @@ export class PersonalProgressPageComponent implements OnInit {
   private _autoBackup = inject(PersonalAutoBackupService);
   private readonly _isPreviewMode = inject(PERSONAL_PREVIEW_MODE);
   private readonly _management = inject(PersonalProjectManagementService);
+  private readonly _folders = inject(PersonalFolderService);
   private readonly _completionUndo = inject(PersonalCompletionUndoService);
   private readonly _entryDelete = inject(PersonalEntryDeleteService);
 
@@ -171,9 +178,42 @@ export class PersonalProgressPageComponent implements OnInit {
   readonly today = this._today.asReadonly();
   readonly selectedProjectId = this._selectedProjectId.asReadonly();
   readonly view = this._view.asReadonly();
+  readonly folders = this._folders.folders;
+  readonly folderAssignments = this._folders.assignments;
+  readonly activeFolderId = signal<string | null>(null);
+  readonly activeFolder = computed(() =>
+    this.activeFolderId()
+      ? (this.folders().find((folder) => folder.id === this.activeFolderId()) ?? null)
+      : null,
+  );
+  readonly folderCards = viewChildren<ElementRef<HTMLElement>>('folderCard');
+  readonly folderDropTargetId = signal<string | null>(null);
+  readonly visibleRows = computed(() => {
+    const activeFolderId = this.activeFolderId();
+    const assignments = this.folderAssignments();
+    return this.view().rows.filter((row) =>
+      activeFolderId
+        ? assignments[row.project.id] === activeFolderId
+        : !assignments[row.project.id],
+    );
+  });
   readonly historyDates = computed(() =>
     this.view().dates.filter((day) => day !== this.view().today),
   );
+  readonly displayHistoryDates = computed(() =>
+    this.recordExpanded() ? this.historyDates() : this.historyDates().slice(0, 1),
+  );
+  readonly gridTemplateColumns = computed(() => {
+    const visibleHistoryCount = this.displayHistoryDates().length;
+    if (this.recordExpanded()) {
+      const dateCount = visibleHistoryCount + 1;
+      return `var(--pp-project-width) repeat(${dateCount}, minmax(0, 1fr))`;
+    }
+    const dateCount = visibleHistoryCount + 1;
+    return `var(--pp-project-width) repeat(${dateCount}, minmax(var(--pp-day-min-width, 96px), 1fr)) var(--pp-steps-width)`;
+  });
+  readonly recordExpanded = signal(false);
+  readonly canExpandRecords = computed(() => this.historyDates().length > 0);
   readonly todayLabel = computed(
     () =>
       `${this._translate.instant('PERSONAL_PROGRESS.TODAY')} · ${personalProgressDayLabel(
@@ -209,8 +249,7 @@ export class PersonalProgressPageComponent implements OnInit {
     return value && isPersonalProjectQuadrant(value) ? value : 'unclassified';
   }
 
-  async setQuadrant(value: string): Promise<void> {
-    const row = this.selectedRow();
+  async setQuadrant(row: PersonalProgressProjectRow, value: string): Promise<void> {
     if (!row || this.isSaving()) return;
     if (value !== 'unclassified' && !isPersonalProjectQuadrant(value)) return;
     const result = await this._run(() =>
@@ -225,6 +264,9 @@ export class PersonalProgressPageComponent implements OnInit {
   }
   readonly draftPrompt = signal<DraftPrompt | null>(null);
   readonly targetNotice = signal<string | null>(null);
+  readonly folderMenuId = signal<string | null>(null);
+  readonly renamingFolderId = signal<string | null>(null);
+  folderDraftName = '';
   readonly archivedProjectId = signal<string | null>(null);
   private _draftPromptResolver: ((proceed: boolean) => void) | null = null;
   private readonly _entryDayInput =
@@ -422,6 +464,7 @@ export class PersonalProgressPageComponent implements OnInit {
       .pipe(takeUntilDestroyed(this._destroyRef))
       .subscribe((params) => {
         this._queryTargetProjectId = params.get('projectId')?.trim() || null;
+        this.activeFolderId.set(params.get('folderId')?.trim() || null);
         this._queryVersion++;
         this._queryApplied = false;
         void this._applyQueryTarget();
@@ -714,6 +757,12 @@ export class PersonalProgressPageComponent implements OnInit {
     return personalProgressDayLabel(day, this.view().today);
   }
 
+  toggleRecordExpanded(event?: Event): void {
+    event?.stopPropagation();
+    if (!this.canExpandRecords() && !this.recordExpanded()) return;
+    this.recordExpanded.update((expanded) => !expanded);
+  }
+
   dayAria(day: string): string {
     return personalProgressDayAria(day);
   }
@@ -736,6 +785,9 @@ export class PersonalProgressPageComponent implements OnInit {
       this.newProjectDay = '';
       this.creatingProject.set(false);
       this._activateProject(result.value.projectId);
+      if (this.activeFolderId()) {
+        this._folders.assign(result.value.projectId, this.activeFolderId());
+      }
       if (this._queryTargetProjectId && queryVersion === this._queryVersion) {
         this._replaceProjectQuery(result.value.projectId);
       }
@@ -824,7 +876,7 @@ export class PersonalProgressPageComponent implements OnInit {
   }
 
   async dropProjectRows(event: CdkDragDrop<PersonalProgressProjectRow[]>): Promise<void> {
-    const rows = this.view().rows;
+    const rows = this.visibleRows();
     if (
       event.previousContainer !== event.container ||
       event.previousIndex === event.currentIndex
@@ -836,6 +888,132 @@ export class PersonalProgressPageComponent implements OnInit {
       event.currentIndex > event.previousIndex,
     );
   }
+
+  createFolder(): void {
+    const folder = this._folders.create();
+    this.folderMenuId.set(null);
+    this.renamingFolderId.set(folder.id);
+    this.folderDraftName = '';
+  }
+
+  openFolder(folderId: string): void {
+    void this._router.navigate(['/personal-progress'], {
+      queryParams: { folderId },
+    });
+  }
+
+  backToFolders(): void {
+    void this._router.navigate(['/personal-progress']);
+  }
+
+  toggleFolderMenu(folderId: string, event: Event): void {
+    event.stopPropagation();
+    this.folderMenuId.update((current) => (current === folderId ? null : folderId));
+  }
+
+  startFolderRename(folderId: string, name: string, event?: Event): void {
+    event?.stopPropagation();
+    this.folderMenuId.set(null);
+    this.renamingFolderId.set(folderId);
+    this.folderDraftName = name;
+  }
+
+  saveFolderRename(): void {
+    const folderId = this.renamingFolderId();
+    if (!folderId) return;
+    this._folders.rename(folderId, this.folderDraftName);
+    this.renamingFolderId.set(null);
+    this.folderDraftName = '';
+  }
+
+  cancelFolderRename(): void {
+    this.renamingFolderId.set(null);
+    this.folderDraftName = '';
+  }
+
+  deleteFolder(folderId: string, event?: Event): void {
+    event?.stopPropagation();
+    this.folderMenuId.set(null);
+    if (!window.confirm('删除文件夹？里面的项目会回到未分组。')) return;
+    this._folders.remove(folderId);
+    if (this.activeFolderId() === folderId) this.backToFolders();
+  }
+
+  focusFolderRenameEnd(event: FocusEvent): void {
+    const input = event.target as HTMLInputElement;
+    const end = input.value.length;
+    input.setSelectionRange(end, end);
+  }
+
+  folderProjectCount(folderId: string): number {
+    const assignments = this.folderAssignments();
+    return this.view().rows.filter((row) => assignments[row.project.id] === folderId)
+      .length;
+  }
+
+  folderFor(projectId: string): PersonalFolder | null {
+    return this._folders.folderFor(projectId);
+  }
+
+  removeProjectFromFolder(projectId: string): void {
+    this._folders.assign(projectId, null);
+  }
+
+  onProjectDragMoved(event: CdkDragMove<PersonalProgressProjectRow>): void {
+    const point = event.pointerPosition;
+    const target = this.folderCards().find((card) => {
+      const rect = card.nativeElement.getBoundingClientRect();
+      return (
+        point.x >= rect.left &&
+        point.x <= rect.right &&
+        point.y >= rect.top &&
+        point.y <= rect.bottom
+      );
+    });
+    this.folderDropTargetId.set(target?.nativeElement.dataset['folderId'] ?? null);
+  }
+
+  onProjectDragEnded(event: CdkDragEnd<PersonalProgressProjectRow>): void {
+    const folderId = this.folderDropTargetId();
+    this.folderDropTargetId.set(null);
+    if (!folderId) return;
+    const row = event.source.data;
+    if (row) this._folders.assign(row.project.id, folderId);
+  }
+
+  startFolderDrag(folderId: string, event: DragEvent): void {
+    if (!event.dataTransfer) return;
+    event.dataTransfer.setData('application/x-project1-folder', folderId);
+    event.dataTransfer.effectAllowed = 'move';
+  }
+
+  allowFolderDrop(event: DragEvent): void {
+    if (event.dataTransfer?.types.includes('application/x-project1-folder')) {
+      event.preventDefault();
+      event.dataTransfer.dropEffect = 'move';
+    }
+  }
+
+  dropFolderOn(targetId: string, event: DragEvent): void {
+    const folderId = event.dataTransfer?.getData('application/x-project1-folder');
+    if (!folderId) return;
+    event.preventDefault();
+    event.stopPropagation();
+    this._folders.move(folderId, targetId);
+  }
+
+  endFolderDrag(): void {
+    // Native drag completion is handled by the drop target.
+  }
+
+  dropProjectIntoFolder(
+    event: CdkDragDrop<PersonalProgressProjectRow[]>,
+    folderId: string,
+  ): void {
+    const row = event.item.data as PersonalProgressProjectRow | undefined;
+    if (row) this._folders.assign(row.project.id, folderId);
+  }
+
   async moveProjectRow(
     event: Event,
     row: PersonalProgressProjectRow,
@@ -843,7 +1021,7 @@ export class PersonalProgressPageComponent implements OnInit {
   ): Promise<void> {
     event.preventDefault();
     event.stopPropagation();
-    const rows = this.view().rows,
+    const rows = this.visibleRows(),
       index = rows.findIndex((item) => item.project.id === row.project.id);
     const target = rows[index + delta];
     if (target) await this._moveProjectRow(row, target, delta > 0);
@@ -1321,6 +1499,11 @@ export class PersonalProgressPageComponent implements OnInit {
   @HostListener('document:keydown.escape')
   onDocumentEscape(): void {
     if (this.draftPrompt()) this.chooseDraftContinue();
+  }
+
+  @HostListener('document:click')
+  onDocumentClick(): void {
+    if (this.folderMenuId()) this.folderMenuId.set(null);
   }
 
   private _resolveDraftPrompt(choice: DraftChoice): void {

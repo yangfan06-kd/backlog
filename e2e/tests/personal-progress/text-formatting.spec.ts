@@ -140,7 +140,7 @@ test.describe('personal rich text', () => {
     await editor.getByTestId('pt-color-red').click();
     await page.getByTestId('pp-add-entry').click();
     await expect(status(page)).toHaveAttribute('data-save-state', 'saved');
-    await expect(editor.locator('.cm-content')).toHaveText('');
+    await expect(editor).toBeHidden();
     await expect(projectRow(page, 'Backup Format').locator('.pt-italic')).toBeVisible();
 
     await page.goto('/#/personal-backup');
@@ -241,8 +241,8 @@ test.describe('personal rich text', () => {
     await page.getByTestId('pp-step-edit-save').click();
     await expect(status(page)).toHaveAttribute('data-save-state', 'saved');
     await row.getByTestId('pp-complete-step').click();
-    await expect(page.getByTestId('pp-undo')).toBeEnabled();
-    await page.getByTestId('pp-undo').click();
+    await expect(row.getByTestId('pp-undo-entry')).toHaveCount(1);
+    await row.getByTestId('pp-undo-entry').click();
     await expect(status(page)).toHaveAttribute('data-save-state', 'saved');
     await expect(
       row.locator('[data-testid="pp-step-title"] .pt-underline'),

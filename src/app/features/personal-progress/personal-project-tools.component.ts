@@ -15,9 +15,11 @@ import {
 import { FormsModule } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatMenuModule } from '@angular/material/menu';
+import { TranslatePipe } from '@ngx-translate/core';
 import { Project } from '../project/project.model';
 import { RenameProjectInput } from './personal-project-management.service';
-import { personalProjectKind } from './personal-progress.model';
+import { personalProjectKind, personalProjectQuadrant } from './personal-progress.model';
+import { PERSONAL_OVERVIEW_GROUPS } from '../personal-overview/personal-overview.view';
 
 @Component({
   standalone: true,
@@ -139,7 +141,7 @@ export class PersonalProjectPlanDialogComponent {
 @Component({
   selector: 'personal-project-tools',
   standalone: true,
-  imports: [MatMenuModule],
+  imports: [MatMenuModule, TranslatePipe],
   template: `
     <button
       type="button"
@@ -173,6 +175,35 @@ export class PersonalProjectPlanDialogComponent {
           设置计划日期
         </button>
       }
+      @if (!isRoutine()) {
+        <button
+          mat-menu-item
+          type="button"
+          data-testid="pm-quadrant-trigger"
+          [matMenuTriggerFor]="quadrantMenu"
+        >
+          <span>四象限</span>
+          <span class="pm-submenu-arrow">›</span>
+        </button>
+        <mat-menu
+          #quadrantMenu="matMenu"
+          class="project1-menu"
+        >
+          @for (option of quadrantOptions; track option.id) {
+            <button
+              mat-menu-item
+              type="button"
+              [attr.data-testid]="'pm-quadrant-' + option.id"
+              (click)="quadrantChanged.emit(option.id)"
+            >
+              <span>{{ option.labelKey | translate }}</span>
+              @if (currentQuadrant() === option.id) {
+                <span class="pm-check">✓</span>
+              }
+            </button>
+          }
+        </mat-menu>
+      }
       @if (allowConversion()) {
         <button
           mat-menu-item
@@ -181,6 +212,16 @@ export class PersonalProjectPlanDialogComponent {
           (click)="conversionRequested.emit()"
         >
           {{ isRoutine() ? '变更为项目进展' : '变更为常态事项' }}
+        </button>
+      }
+      @if (folderName()) {
+        <button
+          mat-menu-item
+          type="button"
+          data-testid="pm-remove-from-folder"
+          (click)="removeFromFolder.emit()"
+        >
+          移出文件夹
         </button>
       }
       <button
@@ -197,6 +238,20 @@ export class PersonalProjectPlanDialogComponent {
     `
       :host {
         display: inline-flex;
+      }
+      .pm-section-label {
+        padding: 8px 12px 3px;
+        color: var(--text-color-muted);
+        font-size: 11px;
+        letter-spacing: 0.04em;
+      }
+      .pm-check {
+        margin-left: auto;
+        color: var(--c-primary);
+      }
+      .pm-submenu-arrow {
+        margin-left: auto;
+        color: var(--text-color-muted);
       }
       .pm-menu {
         min-height: 32px;
@@ -227,11 +282,20 @@ export class PersonalProjectToolsComponent {
   readonly planChanged = output<string | null>();
   readonly trashConfirmed = output<void>();
   readonly conversionRequested = output<void>();
+  readonly quadrantChanged = output<string>();
+  readonly folderName = input<string | null>(null);
+  readonly removeFromFolder = output<void>();
+  readonly quadrantOptions = PERSONAL_OVERVIEW_GROUPS;
   readonly renamed = output<Omit<RenameProjectInput, 'operationId'>>();
   private _dialog = inject(MatDialog);
   private _destroy = inject(DestroyRef);
   isRoutine(): boolean {
     return personalProjectKind(this.project()) === 'routine';
+  }
+
+  currentQuadrant(): string {
+    const value = personalProjectQuadrant(this.project()).value;
+    return value ?? 'unclassified';
   }
 
   openRename(): void {

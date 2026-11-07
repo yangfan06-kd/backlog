@@ -1,4 +1,5 @@
 import { expect, test } from '../../fixtures/test.fixture';
+import { setProjectQuadrant } from '../../utils/personal-progress-helpers';
 
 test('dragging a project name immediately after pressing moves it', async ({ page }) => {
   await page.goto('/#/personal-progress');
@@ -91,11 +92,7 @@ test('long press reorders within a quadrant and persists after reload', async ({
     await expect(
       page.getByTestId('pp-project-row').filter({ hasText: name }),
     ).toBeVisible();
-    await page.getByTestId('pp-quadrant').selectOption('urgent-important');
-    await expect(page.getByTestId('pp-status')).toHaveAttribute(
-      'data-save-state',
-      'saved',
-    );
+    await setProjectQuadrant(page, name, 'urgent-important');
   }
   await page.goto('/#/personal-overview');
   const group = page.getByTestId('po-quadrant').filter({ hasText: '排序甲' });

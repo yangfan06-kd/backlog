@@ -4,6 +4,10 @@ import {
 } from '../../utils/personal-backup-helpers';
 import { expect, test } from '../../fixtures/test.fixture';
 import { skipOnboardingForE2E } from '../../utils/waits';
+import {
+  expectNoUndoCompletion,
+  undoLatestCompletion,
+} from '../../utils/personal-progress-helpers';
 import type { Locator, Page } from '@playwright/test';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
@@ -110,7 +114,7 @@ test.describe('personal progress minimal offline loop', () => {
     await page.getByTestId('pp-entry-input').fill('B past record');
     await page.getByTestId('pp-add-entry').click();
     await expect(status(page)).toHaveAttribute('data-save-state', 'saved');
-    await expect(page.getByTestId('pp-date')).toHaveCount(3);
+    await expect(page.getByTestId('pp-date')).toHaveCount(2);
     await projectRow(page, 'Dates A').getByTestId('pp-project-toggle').click();
     await expect(page.getByTestId('pp-date')).toHaveCount(2);
     await expect(
@@ -167,19 +171,19 @@ test.describe('personal progress minimal offline loop', () => {
     await completeStepButton(page, 'Alpha', 'Four').click();
     await expect(status(page)).toHaveAttribute('data-save-state', 'saved');
 
-    await page.getByTestId('pp-undo').click();
+    await undoLatestCompletion(page);
     await expect(status(page)).toHaveAttribute('data-save-state', 'saved');
     await expect(stepButton(page, 'Alpha', 'Four')).toBeVisible();
-    await page.getByTestId('pp-undo').click();
+    await undoLatestCompletion(page);
     await expect(status(page)).toHaveAttribute('data-save-state', 'saved');
     await expect(stepButton(page, 'Alpha', 'Three')).toBeVisible();
-    await page.getByTestId('pp-undo').click();
+    await undoLatestCompletion(page);
     await expect(status(page)).toHaveAttribute('data-save-state', 'saved');
     await expect(stepButton(page, 'Alpha', 'Two')).toBeVisible();
-    await page.getByTestId('pp-undo').click();
+    await undoLatestCompletion(page);
     await expect(stepButton(page, 'Alpha', 'One')).toBeVisible();
     await expect(entryBody(page, 'Alpha', 'One')).toHaveCount(0);
-    await expect(page.getByTestId('pp-undo')).toBeDisabled();
+    await expectNoUndoCompletion(page);
     await completeStepButton(page, 'Alpha', 'One').click();
     await expect(status(page)).toHaveAttribute('data-save-state', 'saved');
     await expect(entryBody(page, 'Alpha', 'One')).toBeVisible();
@@ -207,7 +211,7 @@ test.describe('personal progress minimal offline loop', () => {
     await page.getByTestId('pp-entry-edit-input').fill('Two edited');
     await page.getByTestId('pp-entry-edit-save').click();
     await expect(status(page)).toHaveAttribute('data-save-state', 'saved');
-    await expect(page.getByTestId('pp-undo')).toBeDisabled();
+    await expectNoUndoCompletion(page);
     await expect(entry.getByTestId('pp-undo-entry')).toHaveCount(0);
     await expect(stepButton(page, 'Alpha', 'Two')).toHaveCount(0);
     await expect(entryBody(page, 'Alpha', 'Two edited')).toBeVisible();
@@ -274,7 +278,7 @@ test.describe('personal progress minimal offline loop', () => {
     // A previous "saved" frame can precede the click's rendering turn. Wait for
     // the completed command's enabled undo before asking the route guard to leave.
     await expect(entryBody(page, 'Portable', 'Packed step')).toBeVisible();
-    await expect(page.getByTestId('pp-undo')).toBeEnabled();
+    await expect(page.getByTestId('pp-undo-entry')).toHaveCount(1);
 
     const downloadPromise = page.waitForEvent('download');
     await exportPersonalBackup(page);

@@ -11,11 +11,20 @@ import { PersonalAutoBackupStore } from './personal-auto-backup.store';
 import { PersonalBackupValidator } from './personal-backup-validator.service';
 import { ImexViewService } from '../../imex/imex-meta/imex-view.service';
 import { assertSupportedPersonalTextFormats } from '../personal-text/personal-text.model';
+import {
+  PersonalFolderBackupState,
+  PersonalFolderService,
+} from '../personal-progress/personal-folder.service';
 
 export type PersonalBackupExportResult =
   | { status: 'saved'; path?: string }
   | { status: 'cancelled' }
   | { status: 'failed'; code: string };
+
+type PersonalBackupSnapshot = CompleteBackup<AllModelConfig> & {
+  personalFolders?: PersonalFolderBackupState;
+};
+type PersonalBackupFile = PersonalBackupSnapshot | AppDataComplete;
 
 /**
  * Thin bridge over the existing complete-backup and command-queue machinery.
@@ -33,27 +42,28 @@ export class PersonalBackupFacade {
   private readonly _autoBackupStore = inject(PersonalAutoBackupStore);
   private readonly _validator = inject(PersonalBackupValidator);
   private readonly _imexView = inject(ImexViewService);
+  private readonly _folders = inject(PersonalFolderService);
 
   /** Shared atomic snapshot boundary used by manual and automatic backups. */
-  captureSnapshot(): Promise<CompleteBackup<AllModelConfig>> {
+  captureSnapshot(): Promise<PersonalBackupSnapshot> {
     return this._commandCoordinator.enqueue(() => this._captureSnapshotInternal());
   }
 
-  private _captureSnapshotInternal(): Promise<CompleteBackup<AllModelConfig>> {
-    return this._writeFlush.flushThenRunExclusive(async () =>
+  private async _captureSnapshotInternal(): Promise<PersonalBackupSnapshot> {
+    const snapshot = await this._writeFlush.flushThenRunExclusive(async () =>
       this._backupService.loadCompleteBackup(true),
     );
+    return {
+      ...snapshot,
+      personalFolders: this._folders.exportState(),
+    };
   }
 
   async exportBackup(): Promise<PersonalBackupExportResult> {
     if (this._isPreviewMode && !window.ea?.saveFileDialog) {
       return { status: 'failed', code: 'PREVIEW_RUNTIME_MISSING' };
     }
-    const snapshot = await this._commandCoordinator.enqueue(() =>
-      this._writeFlush.flushThenRunExclusive(async () =>
-        this._backupService.loadCompleteBackup(true),
-      ),
-    );
+    const snapshot = await this.captureSnapshot();
     const filename = `project1-personal-backup-${new Date()
       .toISOString()
       .replace(/[:.]/g, '-')}.json`;
@@ -74,10 +84,11 @@ export class PersonalBackupFacade {
    * the current good data and shows an error.
    */
   async restoreFromText(text: string): Promise<void> {
-    const parsed = JSON.parse(text) as AppDataComplete | CompleteBackup<AllModelConfig>;
+    const parsed = JSON.parse(text) as PersonalBackupFile;
     if (!parsed || typeof parsed !== 'object') {
       throw new Error('INVALID_BACKUP');
     }
+    const folderState = 'personalFolders' in parsed ? parsed.personalFolders : undefined;
     const backupData =
       'data' in parsed && parsed.data && typeof parsed.data === 'object'
         ? (parsed.data as AppDataComplete)
@@ -90,6 +101,7 @@ export class PersonalBackupFacade {
       await this._commandCoordinator.enqueue(() =>
         this._backupService.importCompleteBackup(parsed, false, true),
       );
+      if (folderState !== undefined) this._folders.restoreState(folderState);
       return;
     }
     await this._commandCoordinator.enqueue(async () => {
@@ -113,6 +125,7 @@ export class PersonalBackupFacade {
           }
         }
         await this._backupService.importCompleteBackup(parsed, false, true);
+        if (folderState !== undefined) this._folders.restoreState(folderState);
       } finally {
         this._imexView.setDataImportInProgress(false);
       }

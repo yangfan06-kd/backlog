@@ -1,4 +1,4 @@
-import { DestroyRef, inject, Injectable, signal } from '@angular/core';
+import { DestroyRef, effect, inject, Injectable, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Subscription, filter, firstValueFrom } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
@@ -18,6 +18,7 @@ import { PersonalBackupValidator } from './personal-backup-validator.service';
 import { Project1BackupMeta } from '../../imex/local-backup/local-backup.model';
 import { isPersistentAction } from '../../op-log/core/persistent-action.interface';
 import { PersonalBackupCloseDialogComponent } from './personal-backup-close-dialog.component';
+import { PersonalFolderService } from '../personal-progress/personal-folder.service';
 
 export const AUTO_BACKUP_DEBOUNCE_MS = 30 * 1000;
 export const AUTO_BACKUP_MAX_WAIT_MS = 5 * 60 * 1000;
@@ -51,6 +52,7 @@ export class PersonalAutoBackupService {
   private readonly _imexView = inject(ImexViewService);
   private readonly _execBeforeClose = inject(ExecBeforeCloseService);
   private readonly _dialog = inject(MatDialog);
+  private readonly _folders = inject(PersonalFolderService);
 
   readonly status = signal<AutoBackupStatus>({
     kind: 'idle',
@@ -76,6 +78,14 @@ export class PersonalAutoBackupService {
   private _closing = false;
 
   constructor() {
+    effect(() => {
+      this._folders.folders();
+      this._folders.assignments();
+      if (!this._started) return;
+      queueMicrotask(() => {
+        if (this._started && !this._importInProgress) this.handleDataChange();
+      });
+    });
     this._destroyRef.onDestroy(() => {
       this._clearTimers();
       if (IS_ELECTRON && this._started)

@@ -77,6 +77,10 @@
           [@warpRoute]="isPreviewMode ? null : getPage(o)"
           class="route-wrapper"
         >
+          @if (quickCapture.isOpen()) {
+            <personal-quick-capture-panel></personal-quick-capture-panel>
+          }
+
           <router-outlet #o="outlet"></router-outlet>
         </div>
       </right-panel>

@@ -60,20 +60,20 @@ test('both undo entries preserve strict reverse order after reloading', async ({
   await row(page, '顺序验证').getByTestId('pp-undo-entry').click();
   await save(page);
   await expect(row(page, '顺序验证').getByTestId('pp-step-title')).toHaveText(['三步']);
-  await page.getByTestId('pp-undo').click();
+  await row(page, '顺序验证').getByTestId('pp-undo-entry').click();
   await save(page);
   await expect(row(page, '顺序验证').getByTestId('pp-step-title')).toHaveText([
     '二步',
     '三步',
   ]);
-  await page.getByTestId('pp-undo').click();
+  await row(page, '顺序验证').getByTestId('pp-undo-entry').click();
   await save(page);
   await expect(row(page, '顺序验证').getByTestId('pp-step-title')).toHaveText([
     '一步',
     '二步',
     '三步',
   ]);
-  await expect(page.getByTestId('pp-undo')).toBeDisabled();
+  await expect(row(page, '顺序验证').getByTestId('pp-undo-entry')).toHaveCount(0);
 });
 
 test('a historical completion remains undoable after restore', async ({ page }) => {
@@ -84,7 +84,7 @@ test('a historical completion remains undoable after restore', async ({ page }) 
   await expect(row(page, '顺序验证').getByTestId('pp-entry-body')).toContainText(
     '过去完成',
   );
-  await expect(page.getByTestId('pp-undo')).toBeEnabled();
+  await expect(row(page, '顺序验证').getByTestId('pp-undo-entry')).toHaveCount(1);
   const download = page.waitForEvent('download');
   await exportPersonalBackup(page);
   const file = test.info().outputPath('history.json');
@@ -100,7 +100,7 @@ test('a historical completion remains undoable after restore', async ({ page }) 
   await restorePersonalBackup(page, file);
   await row(page, '顺序验证').getByTestId('pp-project-title').click();
   await expect(row(page, '顺序验证').getByTestId('pp-undo-entry')).toHaveCount(1);
-  await page.getByTestId('pp-undo').click();
+  await row(page, '顺序验证').getByTestId('pp-undo-entry').click();
   await save(page);
   await expect(row(page, '顺序验证').getByTestId('pp-step-title')).toHaveText([
     '过去完成',
@@ -114,6 +114,7 @@ test('routine rename and trash restore keep records and do not offer project sch
   await page.getByTestId('pr-new-item-title').fill('长期记录');
   await page.getByTestId('pr-create-item').click();
   await save(page, 'pr-status');
+  await page.getByTestId('pr-record').first().click();
   await page.getByTestId('pr-entry-body').fill('改动原因与观察');
   await page.getByTestId('pr-save-entry').click();
   await save(page, 'pr-status');
@@ -148,6 +149,7 @@ test('cancelling a routine rename leaves a dirty record intact', async ({ page }
   await page.getByTestId('pr-new-item-title').fill('草稿保护');
   await page.getByTestId('pr-create-item').click();
   await save(page, 'pr-status');
+  await page.getByTestId('pr-record').first().click();
   await page.getByTestId('pr-entry-body').fill('不要丢掉这段');
   await page.getByTestId('pm-menu').click();
   await page.getByTestId('pm-open-rename').click();

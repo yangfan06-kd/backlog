@@ -1,6 +1,7 @@
 <div
   class="personal-progress"
   data-testid="pp-page"
+  cdkDropListGroup
 >
   <header class="pp-header">
     <div class="pp-heading">
@@ -56,7 +57,10 @@
     </p>
   }
 
-  <section class="pp-toolbar">
+  <section
+    class="pp-toolbar"
+    [hidden]="!creatingProject()"
+  >
     <div
       class="pp-toolbar-group pp-toolbar-create"
       [hidden]="!creatingProject()"
@@ -87,54 +91,7 @@
           [disabled]="isSaving()"
       /></label>
     </div>
-
-    <div class="pp-toolbar-group">
-      @if (selectedRow(); as selected) {
-        <label class="pp-quadrant">
-          {{ 'PERSONAL_OVERVIEW.CLASSIFY' | translate }}
-          <select
-            data-testid="pp-quadrant"
-            [attr.aria-label]="
-              'PERSONAL_OVERVIEW.CLASSIFY_PROJECT'
-                | translate: { project: selected.project.title }
-            "
-            [ngModel]="currentQuadrant(selected)"
-            (ngModelChange)="setQuadrant($event)"
-            [disabled]="isSaving()"
-          >
-            @for (option of quadrantOptions; track option.id) {
-              <option [value]="option.id">{{ option.labelKey | translate }}</option>
-            }
-          </select>
-        </label>
-      }
-      <button
-        type="button"
-        data-testid="pp-collapse-all"
-        (click)="collapseAll()"
-        [disabled]="isSaving()"
-      >
-        {{ 'PERSONAL_PROGRESS.COLLAPSE_ALL' | translate }}
-      </button>
-    </div>
   </section>
-  @if (selectedRow(); as selected) {
-    <section
-      class="pp-selection"
-      aria-label="当前项目操作"
-    >
-      <span
-        >当前项目 <strong>{{ selected.project.title }}</strong></span
-      ><button
-        type="button"
-        data-testid="pp-undo"
-        (click)="undoLatest()"
-        [disabled]="isSaving() || !latestUndoableCompletionId()"
-      >
-        撤销最近完成
-      </button>
-    </section>
-  }
   @if (archivedProjectId(); as archivedId) {
     <p class="pp-archived-notice">
       项目已归档
@@ -150,747 +107,987 @@
     </p>
   }
 
-  @if (view().rows.length === 0) {
+  @if (!activeFolderId()) {
+    <section
+      class="pp-folders"
+      data-testid="pp-folders"
+    >
+      <div class="pp-folders-head">
+        <h2>文件夹</h2>
+        <button
+          type="button"
+          class="pp-folder-create"
+          data-testid="pp-create-folder"
+          (click)="createFolder()"
+        >
+          + 新建文件夹
+        </button>
+      </div>
+      @if (folders().length === 0) {
+        <p class="pp-folders-empty">还没有文件夹。新建后可以把项目拖进去。</p>
+      } @else {
+        <div class="pp-folder-grid">
+          @for (folder of folders(); track folder.id) {
+            <div
+              #folderCard
+              class="pp-folder-card"
+              data-testid="pp-folder-card"
+              [attr.data-folder-id]="folder.id"
+              [class.is-folder-drop-target]="folderDropTargetId() === folder.id"
+              (dragover)="allowFolderDrop($event)"
+              (drop)="dropFolderOn(folder.id, $event)"
+              (click)="openFolder(folder.id)"
+            >
+              <div class="pp-folder-card-head">
+                @if (renamingFolderId() === folder.id) {
+                  <input
+                    class="pp-folder-rename"
+                    data-testid="pp-folder-rename-input"
+                    autofocus
+                    placeholder="文件夹名"
+                    [(ngModel)]="folderDraftName"
+                    (focus)="focusFolderRenameEnd($event)"
+                    (keydown.enter)="saveFolderRename()"
+                    (keydown.escape)="cancelFolderRename()"
+                    (blur)="saveFolderRename()"
+                    (click)="$event.stopPropagation()"
+                  />
+                } @else {
+                  <span
+                    class="pp-folder-name"
+                    draggable="true"
+                    title="拖动排序"
+                    (dragstart)="startFolderDrag(folder.id, $event)"
+                    (dragend)="endFolderDrag()"
+                    >{{ folder.name }}</span
+                  >
+                }
+              </div>
+              <span class="pp-folder-count"
+                >{{ folderProjectCount(folder.id) }} 个项目</span
+              >
+              @if (folderMenuId() === folder.id) {
+                <div
+                  class="pp-folder-actions"
+                  (click)="$event.stopPropagation()"
+                >
+                  <button
+                    type="button"
+                    (click)="startFolderRename(folder.id, folder.name, $event)"
+                  >
+                    重命名
+                  </button>
+                  <button
+                    type="button"
+                    (click)="deleteFolder(folder.id, $event)"
+                  >
+                    删除
+                  </button>
+                  <button
+                    type="button"
+                    class="pp-folder-collapse"
+                    title="收起"
+                    aria-label="收起文件夹操作"
+                    (click)="toggleFolderMenu(folder.id, $event)"
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      aria-hidden="true"
+                    >
+                      <path d="m4 6 5 6-5 6M10 6l5 6-5 6M16 6l5 6-5 6" />
+                    </svg>
+                  </button>
+                </div>
+              } @else {
+                <button
+                  type="button"
+                  class="pp-folder-expand"
+                  data-testid="pp-folder-expand"
+                  title="展开"
+                  aria-label="展开文件夹操作"
+                  (click)="toggleFolderMenu(folder.id, $event)"
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                  >
+                    <path d="m4 6 5 6-5 6M10 6l5 6-5 6M16 6l5 6-5 6" />
+                  </svg>
+                </button>
+              }
+            </div>
+          }
+        </div>
+      }
+    </section>
+  } @else if (activeFolder(); as folder) {
+    <section class="pp-folder-page-head">
+      <button
+        type="button"
+        class="pp-folder-back"
+        data-testid="pp-folder-back"
+        (click)="backToFolders()"
+      >
+        ← 返回项目进展
+      </button>
+      <div class="pp-folder-title-line">
+        <div class="pp-folder-page-title">
+          @if (renamingFolderId() === folder.id) {
+            <input
+              class="pp-folder-rename is-page-title"
+              data-testid="pp-folder-page-rename-input"
+              autofocus
+              placeholder="文件夹名"
+              [(ngModel)]="folderDraftName"
+              (focus)="focusFolderRenameEnd($event)"
+              (keydown.enter)="saveFolderRename()"
+              (keydown.escape)="cancelFolderRename()"
+              (blur)="saveFolderRename()"
+            />
+          } @else {
+            <h2>{{ folder.name }}</h2>
+          }
+        </div>
+        <div class="pp-folder-page-meta">
+          <span class="pp-folder-page-count"
+            >{{ folderProjectCount(folder.id) }} 个项目</span
+          >
+          @if (folderMenuId() === folder.id) {
+            <div class="pp-folder-page-actions">
+              <button
+                type="button"
+                (click)="startFolderRename(folder.id, folder.name, $event)"
+              >
+                重命名
+              </button>
+              <button
+                type="button"
+                (click)="deleteFolder(folder.id, $event)"
+              >
+                删除
+              </button>
+              <button
+                type="button"
+                class="pp-folder-collapse"
+                title="收起"
+                aria-label="收起文件夹操作"
+                (click)="toggleFolderMenu(folder.id, $event)"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
+                >
+                  <path d="m4 6 5 6-5 6M10 6l5 6-5 6M16 6l5 6-5 6" />
+                </svg>
+              </button>
+            </div>
+          } @else {
+            <button
+              type="button"
+              class="pp-folder-expand"
+              data-testid="pp-folder-page-expand"
+              title="展开"
+              aria-label="展开文件夹操作"
+              (click)="toggleFolderMenu(folder.id, $event)"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
+                <path d="m4 6 5 6-5 6M10 6l5 6-5 6M16 6l5 6-5 6" />
+              </svg>
+            </button>
+          }
+        </div>
+      </div>
+    </section>
+  }
+
+  @if (selectedRow(); as selected) {
+    <div class="pp-current-project">
+      当前项目 <strong>{{ selected.project.title }}</strong>
+    </div>
+  }
+
+  @if (visibleRows().length === 0) {
     <p class="pp-empty">{{ 'PERSONAL_PROGRESS.EMPTY' | translate }}</p>
   } @else {
     <div
-      class="pp-board-scroll"
-      cdkScrollable
-      data-testid="pp-board-scroll"
-      tabindex="0"
-      [attr.aria-label]="'PERSONAL_PROGRESS.TITLE' | translate"
+      class="pp-board-shell"
+      [class.is-record-expanded]="recordExpanded()"
     >
-      <table
-        class="pp-board"
-        [style.--pp-date-count]="historyDates().length"
+      <div
+        class="pp-board-scroll"
+        cdkScrollable
+        data-testid="pp-board-scroll"
+        tabindex="0"
+        [attr.aria-label]="'PERSONAL_PROGRESS.TITLE' | translate"
       >
-        <colgroup>
-          <col class="pp-col-project" />
-          @for (day of historyDates(); track day) {
-            <col class="pp-col-day" />
-          }
-          <col class="pp-col-today" />
-          <col class="pp-col-steps" />
-        </colgroup>
-        <thead>
-          <tr>
-            <th class="pp-project-col pp-sticky-left">
-              {{ 'PERSONAL_PROGRESS.PROJECT' | translate }}
-            </th>
-            @for (day of historyDates(); track day) {
-              <th class="pp-day-col">
-                <span
-                  class="pp-day pp-history-day"
-                  data-testid="pp-date"
-                  [attr.data-day]="day"
-                  [attr.title]="dayAria(day)"
-                  [attr.aria-label]="dayAria(day)"
-                  >{{ dayLabel(day) }}</span
-                >
+        <table
+          class="pp-board"
+          [class.is-record-expanded]="recordExpanded()"
+          [style.--pp-date-count]="displayHistoryDates().length"
+          [style.--pp-day-count]="displayHistoryDates().length + 1"
+          [style.gridTemplateColumns]="gridTemplateColumns()"
+        >
+          <thead>
+            <tr>
+              <th class="pp-project-col pp-sticky-left">
+                {{ 'PERSONAL_PROGRESS.PROJECT' | translate }}
               </th>
-            }
-            <th
-              class="pp-day-col pp-today-col is-today"
-              [attr.title]="todayLabel()"
-            >
-              <div class="pp-today-head">
-                <button
-                  type="button"
-                  class="pp-backfill"
-                  data-testid="pp-backfill"
-                  cdkOverlayOrigin
-                  #backfillOrigin="cdkOverlayOrigin"
-                  [attr.aria-label]="'PERSONAL_PROGRESS.BACKFILL' | translate"
-                  (click)="focusBackfill()"
-                  [disabled]="!selectedProjectId() || isSaving()"
-                >
-                  + {{ 'PERSONAL_PROGRESS.BACKFILL' | translate }}
-                </button>
-                <ng-template
-                  cdkConnectedOverlay
-                  [cdkConnectedOverlayOrigin]="backfillOrigin"
-                  [cdkConnectedOverlayOpen]="
-                    manualEntryOpen() && !draftPrompt() && inlineNewProjectId() === null
-                  "
-                  [cdkConnectedOverlayPositions]="editorPositions"
-                  [cdkConnectedOverlayViewportMargin]="8"
-                  [cdkConnectedOverlayPush]="true"
-                >
-                  <section
-                    class="pp-add-entry pp-editor-panel pp-manual-panel"
-                    role="dialog"
-                    aria-label="补记完成事项"
+              @for (day of displayHistoryDates(); track day) {
+                <th class="pp-day-col">
+                  <span
+                    class="pp-day pp-history-day"
+                    data-testid="pp-date"
+                    [attr.data-day]="day"
+                    [attr.title]="dayAria(day)"
+                    [attr.aria-label]="dayAria(day)"
+                    >{{ dayLabel(day) }}</span
                   >
-                    <div class="pp-manual-head">
-                      <h2>{{ 'PERSONAL_PROGRESS.ADD_ENTRY' | translate }}</h2>
-                      <button
-                        type="button"
-                        class="pp-link"
-                        data-testid="pp-close-manual"
-                        (click)="closeManualEntry()"
-                      >
-                        关闭
-                      </button>
-                    </div>
-                    @if (selectedRow(); as row) {
-                      <p class="pp-sub">{{ row.project.title }}</p>
-                      <div class="pp-add-row">
-                        <input
-                          #entryDayInput
-                          type="date"
-                          data-testid="pp-entry-day"
-                          [(ngModel)]="newEntryDay"
-                          [max]="today()"
-                          [disabled]="isSaving() || manualEditorBlocked()"
-                        />
-                        <personal-rich-text-editor
-                          testId="pp-entry-input"
-                          [text]="newEntryBody"
-                          [format]="newEntryFormat"
-                          [ariaLabel]="'PERSONAL_PROGRESS.ENTRY_PLACEHOLDER' | translate"
-                          [disabled]="isSaving() || manualEditorBlocked()"
-                          [resetKey]="selectedProjectId() ?? ''"
-                          (valueChange)="onNewEntryChange($event)"
-                          (focused)="beginNewEntryDraft()"
-                        ></personal-rich-text-editor>
+                </th>
+              }
+              <th
+                class="pp-day-col pp-today-col is-today"
+                [attr.title]="todayLabel()"
+              >
+                <div class="pp-today-head">
+                  <button
+                    type="button"
+                    class="pp-backfill"
+                    data-testid="pp-backfill"
+                    cdkOverlayOrigin
+                    #backfillOrigin="cdkOverlayOrigin"
+                    [attr.aria-label]="'PERSONAL_PROGRESS.BACKFILL' | translate"
+                    (click)="focusBackfill()"
+                    [disabled]="!selectedProjectId() || isSaving()"
+                  >
+                    + {{ 'PERSONAL_PROGRESS.BACKFILL' | translate }}
+                  </button>
+                  <ng-template
+                    cdkConnectedOverlay
+                    [cdkConnectedOverlayOrigin]="backfillOrigin"
+                    [cdkConnectedOverlayOpen]="
+                      manualEntryOpen() && !draftPrompt() && inlineNewProjectId() === null
+                    "
+                    [cdkConnectedOverlayPositions]="editorPositions"
+                    [cdkConnectedOverlayViewportMargin]="8"
+                    [cdkConnectedOverlayPush]="true"
+                  >
+                    <section
+                      class="pp-add-entry pp-editor-panel pp-manual-panel"
+                      role="dialog"
+                      aria-label="补记完成事项"
+                    >
+                      <div class="pp-manual-head">
+                        <h2>{{ 'PERSONAL_PROGRESS.ADD_ENTRY' | translate }}</h2>
                         <button
                           type="button"
-                          class="pp-primary"
-                          data-testid="pp-add-entry"
-                          (click)="addEntry()"
-                          [disabled]="
-                            isSaving() || manualEditorBlocked() || !newEntryBody.trim()
-                          "
+                          class="pp-link"
+                          data-testid="pp-close-manual"
+                          (click)="closeManualEntry()"
                         >
-                          {{ 'PERSONAL_PROGRESS.ADD' | translate }}
+                          关闭
                         </button>
                       </div>
-                    } @else {
-                      <p class="pp-sub">
-                        {{ 'PERSONAL_PROGRESS.SELECT_PROJECT' | translate }}
-                      </p>
-                    }
-                  </section>
-                </ng-template>
-                <span class="pp-today-label">{{
-                  'PERSONAL_PROGRESS.TODAY' | translate
-                }}</span>
-                <span
-                  class="pp-today-sep"
-                  aria-hidden="true"
-                  >·</span
-                >
-                <span
-                  class="pp-day pp-today-day pp-date"
-                  data-testid="pp-date"
-                  [attr.data-day]="view().today"
-                  [attr.aria-label]="dayAria(view().today)"
-                  >{{ dayLabel(view().today) }}</span
-                >
-              </div>
-            </th>
-            <th class="pp-steps-col pp-sticky-right">
-              {{ 'PERSONAL_PROGRESS.STEPS' | translate }}
-            </th>
-          </tr>
-        </thead>
-        <tbody
-          cdkDropList
-          [cdkDropListData]="view().rows"
-          [cdkDropListDisabled]="isSaving() || !!activeDraft()"
-          (cdkDropListDropped)="dropProjectRows($event)"
-        >
-          @for (row of view().rows; track row.project.id) {
-            <tr
-              data-testid="pp-project-row"
-              cdkDrag
-              [cdkDragData]="row"
-              [cdkDragStartDelay]="{ mouse: 0, touch: 320 }"
-              cdkDragLockAxis="y"
-              [attr.data-project-id]="row.project.id"
-              [class.is-selected]="isSelected(row)"
-              [class.is-collapsed]="!row.isExpanded"
-              (click)="onProjectRowClick($event, row)"
-            >
-              <ng-template cdkDragPreview
-                ><div class="project1-row-preview">
-                  {{ row.project.title }}
-                </div></ng-template
-              >
-              <th class="pp-project-col pp-sticky-left">
-                <div class="pp-project-cell">
-                  <button
-                    type="button"
-                    class="pp-project-title"
-                    data-testid="pp-project-title"
-                    cdkDragHandle
-                    (keydown.alt.arrowup)="moveProjectRow($event, row, -1)"
-                    (keydown.alt.arrowdown)="moveProjectRow($event, row, 1)"
-                    [attr.data-project-id]="row.project.id"
-                    [attr.aria-pressed]="isSelected(row)"
-                    (click)="selectProject(row.project.id)"
-                  >
-                    {{ row.project.title }}
-                  </button>
-                  <button
-                    type="button"
-                    class="pp-project-toggle"
-                    data-testid="pp-project-toggle"
-                    [attr.aria-expanded]="row.isExpanded"
-                    [attr.aria-label]="
-                      (row.isExpanded
-                        ? 'PERSONAL_PROGRESS.COLLAPSE'
-                        : 'PERSONAL_PROGRESS.EXPAND'
-                      ) | translate
-                    "
-                    (click)="toggleProject(row.project.id)"
-                  >
-                    <span aria-hidden="true">{{ row.isExpanded ? '⌃' : '⌄' }}</span>
-                  </button>
-                </div>
-                @if (row.project.personalProgress?.planning?.day; as plannedDay) {
+                      @if (selectedRow(); as row) {
+                        <p class="pp-sub">{{ row.project.title }}</p>
+                        <div class="pp-add-row">
+                          <input
+                            #entryDayInput
+                            type="date"
+                            data-testid="pp-entry-day"
+                            [(ngModel)]="newEntryDay"
+                            [max]="today()"
+                            [disabled]="isSaving() || manualEditorBlocked()"
+                          />
+                          <personal-rich-text-editor
+                            testId="pp-entry-input"
+                            [text]="newEntryBody"
+                            [format]="newEntryFormat"
+                            [ariaLabel]="
+                              'PERSONAL_PROGRESS.ENTRY_PLACEHOLDER' | translate
+                            "
+                            [disabled]="isSaving() || manualEditorBlocked()"
+                            [resetKey]="selectedProjectId() ?? ''"
+                            (valueChange)="onNewEntryChange($event)"
+                            (focused)="beginNewEntryDraft()"
+                          ></personal-rich-text-editor>
+                          <button
+                            type="button"
+                            class="pp-primary"
+                            data-testid="pp-add-entry"
+                            (click)="addEntry()"
+                            [disabled]="
+                              isSaving() || manualEditorBlocked() || !newEntryBody.trim()
+                            "
+                          >
+                            {{ 'PERSONAL_PROGRESS.ADD' | translate }}
+                          </button>
+                        </div>
+                      } @else {
+                        <p class="pp-sub">
+                          {{ 'PERSONAL_PROGRESS.SELECT_PROJECT' | translate }}
+                        </p>
+                      }
+                    </section>
+                  </ng-template>
+                  <span class="pp-today-label">{{
+                    'PERSONAL_PROGRESS.TODAY' | translate
+                  }}</span>
                   <span
-                    class="pp-plan-date"
-                    data-testid="pp-plan-date"
-                    >计划 {{ plannedDay }}</span
+                    class="pp-today-sep"
+                    aria-hidden="true"
+                    >·</span
                   >
-                }
-                <div class="pp-project-actions">
-                  <button
-                    type="button"
-                    class="pp-project-finish"
-                    data-testid="pp-finish-project-row"
-                    title="完成并归档"
-                    [disabled]="isSaving()"
-                    (click)="finishProjectFor(row)"
+                  <span
+                    class="pp-day pp-today-day pp-date"
+                    data-testid="pp-date"
+                    [attr.data-day]="view().today"
+                    [attr.aria-label]="dayAria(view().today)"
+                    >{{ dayLabel(view().today) }}</span
                   >
-                    归档
-                  </button>
-                  <span class="pp-project-meta"
-                    >{{ row.steps.length }}
-                    {{ 'PERSONAL_PROGRESS.REMAINING' | translate }}</span
-                  >
-                  <personal-project-tools
-                    [allowConversion]="true"
-                    [project]="row.project"
-                    [disabled]="isSaving()"
-                    (planChanged)="manageProject(row.project, 'schedule', $event)"
-                    (trashConfirmed)="manageProject(row.project, 'trash')"
-                    (renamed)="renameProject($event)"
-                    (conversionRequested)="convertProject(row.project)"
-                  ></personal-project-tools>
-                </div>
-              </th>
-
-              @for (day of historyDates(); track day) {
-                <td
-                  class="pp-day-col"
-                  cdkDropList
-                  [cdkDropListData]="row.entriesByDay.get(day) ?? []"
-                  [cdkDropListDisabled]="isSaving() || !!activeDraft()"
-                  (cdkDropListDropped)="reorderRecords($event, row, day)"
-                >
-                  @for (
-                    entry of row.isExpanded ? (row.entriesByDay.get(day) ?? []) : [];
-                    track entry.id
-                  ) {
-                    <div
-                      class="pp-entry"
-                      cdkDrag
-                      [cdkDragStartDelay]="{ mouse: 0, touch: 320 }"
-                      cdkDragLockAxis="y"
-                      [cdkDragData]="entry"
-                      cdkOverlayOrigin
-                      #entryOrigin="cdkOverlayOrigin"
-                      data-testid="pp-entry"
-                      [attr.data-entry-id]="entry.id"
-                    >
-                      @if (editingEntryId() === entry.id) {
-                        <personal-text-view
-                          class="pp-entry-body"
-                          [text]="entry.body"
-                          [format]="entry.bodyFormat"
-                        ></personal-text-view>
-                        <ng-template
-                          cdkConnectedOverlay
-                          [cdkConnectedOverlayOrigin]="entryOrigin"
-                          [cdkConnectedOverlayOpen]="!draftPrompt()"
-                          [cdkConnectedOverlayPositions]="editorPositions"
-                          [cdkConnectedOverlayViewportMargin]="8"
-                          [cdkConnectedOverlayPush]="true"
-                        >
-                          <div
-                            class="pp-editor-panel"
-                            role="dialog"
-                            aria-label="编辑记录"
-                            data-testid="pp-editor-panel"
-                          >
-                            <div class="pp-editor-context">
-                              {{ row.project.title }} · {{ dayAria(entry.recordDay) }}
-                            </div>
-                            <personal-rich-text-editor
-                              testId="pp-entry-edit-input"
-                              [autofocus]="true"
-                              [wrapToolbar]="true"
-                              [text]="editBody"
-                              [format]="editBodyFormat"
-                              [ariaLabel]="'PERSONAL_PROGRESS.EDIT_ENTRY' | translate"
-                              [disabled]="isSaving()"
-                              (valueChange)="onEditEntryChange($event)"
-                            ></personal-rich-text-editor>
-                            <div class="pp-entry-actions">
-                              <button
-                                type="button"
-                                class="pp-primary pp-small"
-                                data-testid="pp-entry-edit-save"
-                                (click)="saveEdit()"
-                                [disabled]="isSaving()"
-                              >
-                                {{ 'PERSONAL_PROGRESS.SAVE' | translate }}
-                              </button>
-                              <button
-                                type="button"
-                                class="pp-small"
-                                (click)="cancelEdit()"
-                              >
-                                {{ 'PERSONAL_PROGRESS.CANCEL' | translate }}
-                              </button>
-                            </div>
-                          </div>
-                        </ng-template>
-                      } @else {
-                        <personal-text-view
-                          testId="pp-entry-body"
-                          cdkDragHandle
-                          tabindex="0"
-                          [attr.aria-label]="
-                            entry.body + '；按住拖动排序，或按 Alt 加上下方向键'
-                          "
-                          (keydown.alt.arrowup)="
-                            moveRecordByKeyboard($event, row, entry, -1)
-                          "
-                          (keydown.alt.arrowdown)="
-                            moveRecordByKeyboard($event, row, entry, 1)
-                          "
-                          class="pp-entry-body"
-                          (dblclick)="beginEntryEdit($event, row, entry)"
-                          [text]="entry.body"
-                          [format]="entry.bodyFormat"
-                        ></personal-text-view>
-                        @if (isSelected(row) && canEdit(entry)) {
-                          <button
-                            type="button"
-                            class="pp-link"
-                            data-testid="pp-entry-edit"
-                            [disabled]="isSaving()"
-                            (click)="startEdit(entry)"
-                          >
-                            {{ 'PERSONAL_PROGRESS.EDIT' | translate }}
-                          </button>
-                        }
-                        @if (
-                          entry.source === 'manual' && isSelected(row) && canEdit(entry)
-                        ) {
-                          <button
-                            type="button"
-                            class="pp-link pp-entry-delete"
-                            data-testid="pp-entry-delete"
-                            (click)="deleteEntry(entry)"
-                          >
-                            删除
-                          </button>
-                        }
-                        @if (
-                          isSelected(row) &&
-                          row.completionByEntryId.get(entry.id)?.isUndoable &&
-                          canEdit(entry)
-                        ) {
-                          <button
-                            type="button"
-                            class="pp-link pp-entry-undo"
-                            data-testid="pp-undo-entry"
-                            (click)="undoEntry(row, entry)"
-                          >
-                            撤销完成
-                          </button>
-                        }
-                      }
-                    </div>
-                  }
-                </td>
-              }
-
-              <td
-                class="pp-day-col pp-today-col is-today"
-                data-testid="pp-today-cell"
-                cdkDropList
-                [cdkDropListData]="row.entriesByDay.get(view().today) ?? []"
-                [cdkDropListDisabled]="isSaving() || !!activeDraft()"
-                (cdkDropListDropped)="reorderRecords($event, row, view().today)"
-                cdkOverlayOrigin
-                #todayOrigin="cdkOverlayOrigin"
-                [attr.tabindex]="row.isExpanded ? 0 : null"
-                (dblclick)="beginInlineEntry($event, row)"
-                (keydown.enter)="beginInlineEntry($event, row)"
-              >
-                @if (row.isExpanded) {
-                  @for (
-                    entry of row.entriesByDay.get(view().today) ?? [];
-                    track entry.id
-                  ) {
-                    <div
-                      class="pp-entry"
-                      cdkDrag
-                      [cdkDragStartDelay]="{ mouse: 0, touch: 320 }"
-                      cdkDragLockAxis="y"
-                      [cdkDragData]="entry"
-                      cdkOverlayOrigin
-                      #entryOrigin="cdkOverlayOrigin"
-                      data-testid="pp-entry"
-                      [attr.data-entry-id]="entry.id"
-                    >
-                      @if (editingEntryId() === entry.id) {
-                        <personal-text-view
-                          class="pp-entry-body"
-                          [text]="entry.body"
-                          [format]="entry.bodyFormat"
-                        ></personal-text-view>
-                        <ng-template
-                          cdkConnectedOverlay
-                          [cdkConnectedOverlayOrigin]="entryOrigin"
-                          [cdkConnectedOverlayOpen]="!draftPrompt()"
-                          [cdkConnectedOverlayPositions]="editorPositions"
-                          [cdkConnectedOverlayViewportMargin]="8"
-                          [cdkConnectedOverlayPush]="true"
-                        >
-                          <div
-                            class="pp-editor-panel"
-                            role="dialog"
-                            aria-label="编辑记录"
-                            data-testid="pp-editor-panel"
-                          >
-                            <div class="pp-editor-context">
-                              {{ row.project.title }} · {{ dayAria(entry.recordDay) }}
-                            </div>
-                            <personal-rich-text-editor
-                              testId="pp-entry-edit-input"
-                              [autofocus]="true"
-                              [wrapToolbar]="true"
-                              [text]="editBody"
-                              [format]="editBodyFormat"
-                              [ariaLabel]="'PERSONAL_PROGRESS.EDIT_ENTRY' | translate"
-                              [disabled]="isSaving()"
-                              (valueChange)="onEditEntryChange($event)"
-                            ></personal-rich-text-editor>
-                            <div class="pp-entry-actions">
-                              <button
-                                type="button"
-                                class="pp-primary pp-small"
-                                data-testid="pp-entry-edit-save"
-                                (click)="saveEdit()"
-                                [disabled]="isSaving()"
-                              >
-                                {{ 'PERSONAL_PROGRESS.SAVE' | translate }}
-                              </button>
-                              <button
-                                type="button"
-                                class="pp-small"
-                                (click)="cancelEdit()"
-                              >
-                                {{ 'PERSONAL_PROGRESS.CANCEL' | translate }}
-                              </button>
-                            </div>
-                          </div>
-                        </ng-template>
-                      } @else {
-                        <personal-text-view
-                          testId="pp-entry-body"
-                          cdkDragHandle
-                          tabindex="0"
-                          [attr.aria-label]="
-                            entry.body + '；按住拖动排序，或按 Alt 加上下方向键'
-                          "
-                          (keydown.alt.arrowup)="
-                            moveRecordByKeyboard($event, row, entry, -1)
-                          "
-                          (keydown.alt.arrowdown)="
-                            moveRecordByKeyboard($event, row, entry, 1)
-                          "
-                          class="pp-entry-body"
-                          (dblclick)="beginEntryEdit($event, row, entry)"
-                          [text]="entry.body"
-                          [format]="entry.bodyFormat"
-                        ></personal-text-view>
-                        @if (isSelected(row) && canEdit(entry)) {
-                          <button
-                            type="button"
-                            class="pp-link"
-                            data-testid="pp-entry-edit"
-                            [disabled]="isSaving()"
-                            (click)="startEdit(entry)"
-                          >
-                            {{ 'PERSONAL_PROGRESS.EDIT' | translate }}
-                          </button>
-                        }
-                        @if (
-                          entry.source === 'manual' && isSelected(row) && canEdit(entry)
-                        ) {
-                          <button
-                            type="button"
-                            class="pp-link pp-entry-delete"
-                            data-testid="pp-entry-delete"
-                            (click)="deleteEntry(entry)"
-                          >
-                            删除
-                          </button>
-                        }
-                        @if (
-                          isSelected(row) &&
-                          row.completionByEntryId.get(entry.id)?.isUndoable &&
-                          canEdit(entry)
-                        ) {
-                          <button
-                            type="button"
-                            class="pp-link pp-entry-undo"
-                            data-testid="pp-undo-entry"
-                            (click)="undoEntry(row, entry)"
-                          >
-                            撤销完成
-                          </button>
-                        }
-                      }
-                    </div>
-                  }
-                  @if (inlineNewProjectId() !== row.project.id) {
+                  @if (!recordExpanded()) {
                     <button
                       type="button"
-                      class="pp-add-today"
-                      data-testid="pp-add-today"
-                      (click)="beginInlineEntry($event, row, true)"
-                      [disabled]="isSaving()"
+                      class="pp-day-expand"
+                      data-testid="pp-expand-records"
+                      title="展开"
+                      aria-label="展开所有日期记录"
+                      [disabled]="!canExpandRecords()"
+                      (click)="toggleRecordExpanded($event)"
                     >
-                      ＋ 记录完成事项
+                      &gt;&gt;&gt;
                     </button>
                   }
-                  @if (inlineNewProjectId() === row.project.id) {
-                    <ng-template
-                      cdkConnectedOverlay
-                      [cdkConnectedOverlayOrigin]="todayOrigin"
-                      [cdkConnectedOverlayOpen]="!draftPrompt()"
-                      [cdkConnectedOverlayPositions]="editorPositions"
-                      [cdkConnectedOverlayViewportMargin]="8"
-                      [cdkConnectedOverlayPush]="true"
-                    >
-                      <div
-                        class="pp-editor-panel"
-                        role="dialog"
-                        aria-label="记录今天完成的事"
-                        data-testid="pp-inline-new"
-                      >
-                        <div class="pp-editor-context">
-                          {{ row.project.title }} · {{ dayAria(view().today) }}
-                        </div>
-                        <personal-rich-text-editor
-                          testId="pp-inline-entry-input"
-                          [wrapToolbar]="true"
-                          [text]="newEntryBody"
-                          [format]="newEntryFormat"
-                          [ariaLabel]="'PERSONAL_PROGRESS.ENTRY_PLACEHOLDER' | translate"
-                          [disabled]="isSaving()"
-                          [autofocus]="true"
-                          (valueChange)="onNewEntryChange($event)"
-                        ></personal-rich-text-editor>
-                        <div class="pp-entry-actions">
-                          <button
-                            type="button"
-                            class="pp-primary pp-small"
-                            data-testid="pp-inline-save"
-                            (click)="addEntry()"
-                            [disabled]="isSaving() || !newEntryBody.trim()"
-                          >
-                            {{ 'PERSONAL_PROGRESS.SAVE' | translate }}
-                          </button>
-                          <button
-                            type="button"
-                            class="pp-small"
-                            (click)="cancelInlineEntry()"
-                          >
-                            {{ 'PERSONAL_PROGRESS.CANCEL' | translate }}
-                          </button>
-                        </div>
-                      </div>
-                    </ng-template>
-                  }
-                }
-              </td>
-
-              <td
-                class="pp-steps-col pp-sticky-right"
-                (click)="onStepsAreaClick($event, row)"
+                </div>
+              </th>
+              <th class="pp-steps-col pp-sticky-right">
+                {{ 'PERSONAL_PROGRESS.STEPS' | translate }}
+              </th>
+            </tr>
+          </thead>
+          <tbody
+            cdkDropList
+            [cdkDropListData]="visibleRows()"
+            [cdkDropListDisabled]="isSaving() || !!activeDraft()"
+            (cdkDropListDropped)="dropProjectRows($event)"
+          >
+            @for (row of visibleRows(); track row.project.id) {
+              <tr
+                data-testid="pp-project-row"
+                cdkDrag
+                [cdkDragData]="row"
+                [cdkDragStartDelay]="{ mouse: 0, touch: 320 }"
+                [attr.data-project-id]="row.project.id"
+                [class.is-selected]="isSelected(row)"
+                [class.is-collapsed]="!row.isExpanded"
+                (click)="onProjectRowClick($event, row)"
+                (cdkDragMoved)="onProjectDragMoved($event)"
+                (cdkDragEnded)="onProjectDragEnded($event)"
               >
-                @if (row.isExpanded) {
-                  <div class="pp-steps-body">
-                    @if (row.steps.length === 0) {
-                      <span class="pp-empty-inline">{{
-                        'PERSONAL_PROGRESS.NO_STEPS' | translate
-                      }}</span>
-                    } @else {
-                      <div
-                        class="pp-steps-scroll"
-                        data-testid="pp-steps-scroll"
-                      >
-                        <ol class="pp-steps">
-                          @for (step of row.steps; track step.task.id) {
-                            <li
-                              class="pp-step-card"
-                              [class.is-editing]="editingStepId() === step.task.id"
-                            >
-                              <div class="pp-step-top">
-                                <button
-                                  type="button"
-                                  class="pp-numeral"
-                                  data-testid="pp-step-numeral"
-                                  [attr.data-step-id]="step.task.id"
-                                  [disabled]="!isSelected(row) || isSaving()"
-                                  [attr.aria-label]="
-                                    'PERSONAL_PROGRESS.INSERT_AFTER'
-                                      | translate: { numeral: step.roman }
-                                  "
-                                  (click)="beginInsert(row, step)"
-                                >
-                                  {{ step.roman }}
-                                </button>
-                                @if (isSelected(row) && !isSaving()) {
-                                  <button
-                                    type="button"
-                                    class="pp-step-edit-link pp-link"
-                                    data-testid="pp-step-edit"
-                                    [attr.data-step-id]="step.task.id"
-                                    (click)="startStepEdit(step)"
-                                  >
-                                    {{ 'PERSONAL_PROGRESS.EDIT_STEP' | translate }}
-                                  </button>
-                                }
-                              </div>
+                <ng-template cdkDragPreview
+                  ><div class="project1-row-preview">
+                    {{ row.project.title }}
+                  </div></ng-template
+                >
+                <th class="pp-project-col pp-sticky-left">
+                  <div class="pp-project-cell">
+                    <button
+                      type="button"
+                      class="pp-project-title"
+                      data-testid="pp-project-title"
+                      cdkDragHandle
+                      (keydown.alt.arrowup)="moveProjectRow($event, row, -1)"
+                      (keydown.alt.arrowdown)="moveProjectRow($event, row, 1)"
+                      [attr.data-project-id]="row.project.id"
+                      [attr.aria-pressed]="isSelected(row)"
+                      (click)="selectProject(row.project.id)"
+                    >
+                      {{ row.project.title }}
+                    </button>
+                    <button
+                      type="button"
+                      class="pp-project-toggle"
+                      data-testid="pp-project-toggle"
+                      [attr.aria-expanded]="row.isExpanded"
+                      [attr.aria-label]="
+                        (row.isExpanded
+                          ? 'PERSONAL_PROGRESS.COLLAPSE'
+                          : 'PERSONAL_PROGRESS.EXPAND'
+                        ) | translate
+                      "
+                      (click)="toggleProject(row.project.id)"
+                    >
+                      <span aria-hidden="true">{{ row.isExpanded ? '⌃' : '⌄' }}</span>
+                    </button>
+                  </div>
+                  @if (row.project.personalProgress?.planning?.day; as plannedDay) {
+                    <span
+                      class="pp-plan-date"
+                      data-testid="pp-plan-date"
+                      >计划 {{ plannedDay }}</span
+                    >
+                  }
+                  <div class="pp-project-actions">
+                    <button
+                      type="button"
+                      class="pp-project-finish"
+                      data-testid="pp-finish-project-row"
+                      title="完成并归档"
+                      [disabled]="isSaving()"
+                      (click)="finishProjectFor(row)"
+                    >
+                      归档
+                    </button>
+                    <span class="pp-project-meta"
+                      >{{ row.steps.length }}
+                      {{ 'PERSONAL_PROGRESS.REMAINING' | translate }}</span
+                    >
+                    <personal-project-tools
+                      [allowConversion]="true"
+                      [project]="row.project"
+                      [disabled]="isSaving()"
+                      (planChanged)="manageProject(row.project, 'schedule', $event)"
+                      (trashConfirmed)="manageProject(row.project, 'trash')"
+                      (renamed)="renameProject($event)"
+                      (conversionRequested)="convertProject(row.project)"
+                      (quadrantChanged)="setQuadrant(row, $event)"
+                      [folderName]="folderFor(row.project.id)?.name ?? null"
+                      (removeFromFolder)="removeProjectFromFolder(row.project.id)"
+                    ></personal-project-tools>
+                  </div>
+                </th>
 
-                              @if (editingStepId() === step.task.id) {
-                                <div class="pp-step-edit">
-                                  <personal-rich-text-editor
-                                    class="pp-step-editor"
-                                    testId="pp-step-edit-input"
-                                    [text]="editStepTitle"
-                                    [format]="editStepFormat"
-                                    [ariaLabel]="
-                                      'PERSONAL_PROGRESS.EDIT_STEP' | translate
-                                    "
-                                    [disabled]="isSaving()"
-                                    (valueChange)="onEditStepChange($event)"
-                                  ></personal-rich-text-editor>
-                                  <div class="pp-step-edit-actions">
-                                    <button
-                                      type="button"
-                                      class="pp-primary pp-small"
-                                      data-testid="pp-step-edit-save"
-                                      (click)="saveStepEdit()"
-                                      [disabled]="isSaving() || !editStepTitle.trim()"
-                                    >
-                                      {{ 'PERSONAL_PROGRESS.SAVE' | translate }}
-                                    </button>
-                                    <button
-                                      type="button"
-                                      class="pp-small"
-                                      (click)="cancelStepEdit()"
-                                      [disabled]="isSaving()"
-                                    >
-                                      {{ 'PERSONAL_PROGRESS.CANCEL' | translate }}
-                                    </button>
-                                  </div>
-                                </div>
-                              } @else {
-                                <div
-                                  class="pp-step-title"
-                                  data-testid="pp-step-title"
-                                  [attr.data-step-id]="step.task.id"
-                                  [attr.data-step-title]="step.task.title"
-                                  [attr.data-project-id]="row.project.id"
-                                >
-                                  <personal-text-view
-                                    [text]="step.task.title"
-                                    [format]="step.task.personalProgress?.stepFormat"
-                                  ></personal-text-view>
-                                </div>
+                @for (day of displayHistoryDates(); track day) {
+                  <td
+                    class="pp-day-col"
+                    cdkDropList
+                    [cdkDropListData]="row.entriesByDay.get(day) ?? []"
+                    [cdkDropListDisabled]="isSaving() || !!activeDraft()"
+                    (cdkDropListDropped)="reorderRecords($event, row, day)"
+                  >
+                    @for (
+                      entry of row.isExpanded ? (row.entriesByDay.get(day) ?? []) : [];
+                      track entry.id
+                    ) {
+                      <div
+                        class="pp-entry"
+                        cdkDrag
+                        [cdkDragStartDelay]="{ mouse: 0, touch: 320 }"
+                        cdkDragLockAxis="y"
+                        [cdkDragData]="entry"
+                        cdkOverlayOrigin
+                        #entryOrigin="cdkOverlayOrigin"
+                        data-testid="pp-entry"
+                        [attr.data-entry-id]="entry.id"
+                      >
+                        @if (editingEntryId() === entry.id) {
+                          <personal-text-view
+                            class="pp-entry-body"
+                            [text]="entry.body"
+                            [format]="entry.bodyFormat"
+                          ></personal-text-view>
+                          <ng-template
+                            cdkConnectedOverlay
+                            [cdkConnectedOverlayOrigin]="entryOrigin"
+                            [cdkConnectedOverlayOpen]="!draftPrompt()"
+                            [cdkConnectedOverlayPositions]="editorPositions"
+                            [cdkConnectedOverlayViewportMargin]="8"
+                            [cdkConnectedOverlayPush]="true"
+                          >
+                            <div
+                              class="pp-editor-panel"
+                              role="dialog"
+                              aria-label="编辑记录"
+                              data-testid="pp-editor-panel"
+                            >
+                              <div class="pp-editor-context">
+                                {{ row.project.title }} · {{ dayAria(entry.recordDay) }}
+                              </div>
+                              <personal-rich-text-editor
+                                testId="pp-entry-edit-input"
+                                [autofocus]="true"
+                                [wrapToolbar]="true"
+                                [text]="editBody"
+                                [format]="editBodyFormat"
+                                [ariaLabel]="'PERSONAL_PROGRESS.EDIT_ENTRY' | translate"
+                                [disabled]="isSaving()"
+                                (valueChange)="onEditEntryChange($event)"
+                              ></personal-rich-text-editor>
+                              <div class="pp-entry-actions">
                                 <button
                                   type="button"
-                                  class="pp-complete"
-                                  data-testid="pp-complete-step"
-                                  [attr.data-step-id]="step.task.id"
-                                  [attr.data-step-title]="step.task.title"
-                                  [disabled]="!isSelected(row) || isSaving()"
-                                  [attr.aria-label]="
-                                    'PERSONAL_PROGRESS.COMPLETE_STEP' | translate
-                                  "
-                                  (click)="completeStep(step)"
+                                  class="pp-primary pp-small"
+                                  data-testid="pp-entry-edit-save"
+                                  (click)="saveEdit()"
+                                  [disabled]="isSaving()"
                                 >
-                                  {{ 'PERSONAL_PROGRESS.COMPLETE' | translate }}
+                                  {{ 'PERSONAL_PROGRESS.SAVE' | translate }}
                                 </button>
-                              }
-                            </li>
+                                <button
+                                  type="button"
+                                  class="pp-small"
+                                  (click)="cancelEdit()"
+                                >
+                                  {{ 'PERSONAL_PROGRESS.CANCEL' | translate }}
+                                </button>
+                              </div>
+                            </div>
+                          </ng-template>
+                        } @else {
+                          <personal-text-view
+                            testId="pp-entry-body"
+                            cdkDragHandle
+                            tabindex="0"
+                            [attr.aria-label]="
+                              entry.body + '；按住拖动排序，或按 Alt 加上下方向键'
+                            "
+                            (keydown.alt.arrowup)="
+                              moveRecordByKeyboard($event, row, entry, -1)
+                            "
+                            (keydown.alt.arrowdown)="
+                              moveRecordByKeyboard($event, row, entry, 1)
+                            "
+                            class="pp-entry-body"
+                            (dblclick)="beginEntryEdit($event, row, entry)"
+                            [text]="entry.body"
+                            [format]="entry.bodyFormat"
+                          ></personal-text-view>
+                          @if (isSelected(row) && canEdit(entry)) {
+                            <button
+                              type="button"
+                              class="pp-link"
+                              data-testid="pp-entry-edit"
+                              [disabled]="isSaving()"
+                              (click)="startEdit(entry)"
+                            >
+                              {{ 'PERSONAL_PROGRESS.EDIT' | translate }}
+                            </button>
                           }
-                        </ol>
+                          @if (
+                            entry.source === 'manual' && isSelected(row) && canEdit(entry)
+                          ) {
+                            <button
+                              type="button"
+                              class="pp-link pp-entry-delete"
+                              data-testid="pp-entry-delete"
+                              (click)="deleteEntry(entry)"
+                            >
+                              删除
+                            </button>
+                          }
+                          @if (
+                            isSelected(row) &&
+                            row.completionByEntryId.get(entry.id)?.isUndoable &&
+                            canEdit(entry)
+                          ) {
+                            <button
+                              type="button"
+                              class="pp-link pp-entry-undo"
+                              data-testid="pp-undo-entry"
+                              (click)="undoEntry(row, entry)"
+                            >
+                              撤销完成
+                            </button>
+                          }
+                        }
                       </div>
                     }
+                  </td>
+                }
 
-                    @if (isSelected(row)) {
-                      @if (insertingAfter()?.projectId === row.project.id) {
-                        <div class="pp-insert">
+                <td
+                  class="pp-day-col pp-today-col is-today"
+                  data-testid="pp-today-cell"
+                  cdkDropList
+                  [cdkDropListData]="row.entriesByDay.get(view().today) ?? []"
+                  [cdkDropListDisabled]="isSaving() || !!activeDraft()"
+                  (cdkDropListDropped)="reorderRecords($event, row, view().today)"
+                  cdkOverlayOrigin
+                  #todayOrigin="cdkOverlayOrigin"
+                  [attr.tabindex]="row.isExpanded ? 0 : null"
+                  (dblclick)="beginInlineEntry($event, row)"
+                  (keydown.enter)="beginInlineEntry($event, row)"
+                >
+                  @if (row.isExpanded) {
+                    @for (
+                      entry of row.entriesByDay.get(view().today) ?? [];
+                      track entry.id
+                    ) {
+                      <div
+                        class="pp-entry"
+                        cdkDrag
+                        [cdkDragStartDelay]="{ mouse: 0, touch: 320 }"
+                        cdkDragLockAxis="y"
+                        [cdkDragData]="entry"
+                        cdkOverlayOrigin
+                        #entryOrigin="cdkOverlayOrigin"
+                        data-testid="pp-entry"
+                        [attr.data-entry-id]="entry.id"
+                      >
+                        @if (editingEntryId() === entry.id) {
+                          <personal-text-view
+                            class="pp-entry-body"
+                            [text]="entry.body"
+                            [format]="entry.bodyFormat"
+                          ></personal-text-view>
+                          <ng-template
+                            cdkConnectedOverlay
+                            [cdkConnectedOverlayOrigin]="entryOrigin"
+                            [cdkConnectedOverlayOpen]="!draftPrompt()"
+                            [cdkConnectedOverlayPositions]="editorPositions"
+                            [cdkConnectedOverlayViewportMargin]="8"
+                            [cdkConnectedOverlayPush]="true"
+                          >
+                            <div
+                              class="pp-editor-panel"
+                              role="dialog"
+                              aria-label="编辑记录"
+                              data-testid="pp-editor-panel"
+                            >
+                              <div class="pp-editor-context">
+                                {{ row.project.title }} · {{ dayAria(entry.recordDay) }}
+                              </div>
+                              <personal-rich-text-editor
+                                testId="pp-entry-edit-input"
+                                [autofocus]="true"
+                                [wrapToolbar]="true"
+                                [text]="editBody"
+                                [format]="editBodyFormat"
+                                [ariaLabel]="'PERSONAL_PROGRESS.EDIT_ENTRY' | translate"
+                                [disabled]="isSaving()"
+                                (valueChange)="onEditEntryChange($event)"
+                              ></personal-rich-text-editor>
+                              <div class="pp-entry-actions">
+                                <button
+                                  type="button"
+                                  class="pp-primary pp-small"
+                                  data-testid="pp-entry-edit-save"
+                                  (click)="saveEdit()"
+                                  [disabled]="isSaving()"
+                                >
+                                  {{ 'PERSONAL_PROGRESS.SAVE' | translate }}
+                                </button>
+                                <button
+                                  type="button"
+                                  class="pp-small"
+                                  (click)="cancelEdit()"
+                                >
+                                  {{ 'PERSONAL_PROGRESS.CANCEL' | translate }}
+                                </button>
+                              </div>
+                            </div>
+                          </ng-template>
+                        } @else {
+                          <personal-text-view
+                            testId="pp-entry-body"
+                            cdkDragHandle
+                            tabindex="0"
+                            [attr.aria-label]="
+                              entry.body + '；按住拖动排序，或按 Alt 加上下方向键'
+                            "
+                            (keydown.alt.arrowup)="
+                              moveRecordByKeyboard($event, row, entry, -1)
+                            "
+                            (keydown.alt.arrowdown)="
+                              moveRecordByKeyboard($event, row, entry, 1)
+                            "
+                            class="pp-entry-body"
+                            (dblclick)="beginEntryEdit($event, row, entry)"
+                            [text]="entry.body"
+                            [format]="entry.bodyFormat"
+                          ></personal-text-view>
+                          @if (isSelected(row) && canEdit(entry)) {
+                            <button
+                              type="button"
+                              class="pp-link"
+                              data-testid="pp-entry-edit"
+                              [disabled]="isSaving()"
+                              (click)="startEdit(entry)"
+                            >
+                              {{ 'PERSONAL_PROGRESS.EDIT' | translate }}
+                            </button>
+                          }
+                          @if (
+                            entry.source === 'manual' && isSelected(row) && canEdit(entry)
+                          ) {
+                            <button
+                              type="button"
+                              class="pp-link pp-entry-delete"
+                              data-testid="pp-entry-delete"
+                              (click)="deleteEntry(entry)"
+                            >
+                              删除
+                            </button>
+                          }
+                          @if (
+                            isSelected(row) &&
+                            row.completionByEntryId.get(entry.id)?.isUndoable &&
+                            canEdit(entry)
+                          ) {
+                            <button
+                              type="button"
+                              class="pp-link pp-entry-undo"
+                              data-testid="pp-undo-entry"
+                              (click)="undoEntry(row, entry)"
+                            >
+                              撤销完成
+                            </button>
+                          }
+                        }
+                      </div>
+                    }
+                    @if (inlineNewProjectId() !== row.project.id) {
+                      <button
+                        type="button"
+                        class="pp-add-today"
+                        data-testid="pp-add-today"
+                        (click)="beginInlineEntry($event, row, true)"
+                        [disabled]="isSaving()"
+                      >
+                        ＋ 记录完成事项
+                      </button>
+                    }
+                    @if (inlineNewProjectId() === row.project.id) {
+                      <ng-template
+                        cdkConnectedOverlay
+                        [cdkConnectedOverlayOrigin]="todayOrigin"
+                        [cdkConnectedOverlayOpen]="!draftPrompt()"
+                        [cdkConnectedOverlayPositions]="editorPositions"
+                        [cdkConnectedOverlayViewportMargin]="8"
+                        [cdkConnectedOverlayPush]="true"
+                      >
+                        <div
+                          class="pp-editor-panel"
+                          role="dialog"
+                          aria-label="记录今天完成的事"
+                          data-testid="pp-inline-new"
+                        >
+                          <div class="pp-editor-context">
+                            {{ row.project.title }} · {{ dayAria(view().today) }}
+                          </div>
                           <personal-rich-text-editor
-                            testId="pp-insert-input"
-                            [text]="insertTitle"
-                            [format]="insertFormat"
+                            testId="pp-inline-entry-input"
+                            [wrapToolbar]="true"
+                            [text]="newEntryBody"
+                            [format]="newEntryFormat"
                             [ariaLabel]="
-                              'PERSONAL_PROGRESS.INSERT_PLACEHOLDER' | translate
+                              'PERSONAL_PROGRESS.ENTRY_PLACEHOLDER' | translate
                             "
                             [disabled]="isSaving()"
-                            (valueChange)="onInsertChange($event)"
+                            [autofocus]="true"
+                            (valueChange)="onNewEntryChange($event)"
                           ></personal-rich-text-editor>
-                          <div class="pp-insert-actions">
+                          <div class="pp-entry-actions">
                             <button
                               type="button"
                               class="pp-primary pp-small"
-                              data-testid="pp-insert-save"
-                              (click)="saveInsert()"
-                              [disabled]="isSaving() || !insertTitle.trim()"
+                              data-testid="pp-inline-save"
+                              (click)="addEntry()"
+                              [disabled]="isSaving() || !newEntryBody.trim()"
                             >
                               {{ 'PERSONAL_PROGRESS.SAVE' | translate }}
                             </button>
                             <button
                               type="button"
                               class="pp-small"
-                              (click)="cancelInsert()"
+                              (click)="cancelInlineEntry()"
                             >
                               {{ 'PERSONAL_PROGRESS.CANCEL' | translate }}
                             </button>
                           </div>
                         </div>
-                      } @else {
-                        <button
-                          type="button"
-                          class="pp-append"
-                          data-testid="pp-append-step"
-                          (click)="beginAppend(row)"
-                          [disabled]="isSaving()"
-                        >
-                          {{ 'PERSONAL_PROGRESS.APPEND_STEP' | translate }}
-                        </button>
-                      }
+                      </ng-template>
                     }
-                  </div>
-                }
-              </td>
-            </tr>
-          }
-        </tbody>
-      </table>
+                  }
+                </td>
+
+                <td
+                  class="pp-steps-col pp-sticky-right"
+                  (click)="onStepsAreaClick($event, row)"
+                >
+                  @if (row.isExpanded) {
+                    <div class="pp-steps-body">
+                      @if (row.steps.length === 0) {
+                        <span class="pp-empty-inline">{{
+                          'PERSONAL_PROGRESS.NO_STEPS' | translate
+                        }}</span>
+                      } @else {
+                        <div
+                          class="pp-steps-scroll"
+                          data-testid="pp-steps-scroll"
+                        >
+                          <ol class="pp-steps">
+                            @for (step of row.steps; track step.task.id) {
+                              <li
+                                class="pp-step-card"
+                                [class.is-editing]="editingStepId() === step.task.id"
+                              >
+                                <div class="pp-step-top">
+                                  <button
+                                    type="button"
+                                    class="pp-numeral"
+                                    data-testid="pp-step-numeral"
+                                    [attr.data-step-id]="step.task.id"
+                                    [disabled]="!isSelected(row) || isSaving()"
+                                    [attr.aria-label]="
+                                      'PERSONAL_PROGRESS.INSERT_AFTER'
+                                        | translate: { numeral: step.roman }
+                                    "
+                                    (click)="beginInsert(row, step)"
+                                  >
+                                    {{ step.roman }}
+                                  </button>
+                                  @if (isSelected(row) && !isSaving()) {
+                                    <button
+                                      type="button"
+                                      class="pp-step-edit-link pp-link"
+                                      data-testid="pp-step-edit"
+                                      [attr.data-step-id]="step.task.id"
+                                      (click)="startStepEdit(step)"
+                                    >
+                                      {{ 'PERSONAL_PROGRESS.EDIT_STEP' | translate }}
+                                    </button>
+                                  }
+                                </div>
+
+                                @if (editingStepId() === step.task.id) {
+                                  <div class="pp-step-edit">
+                                    <personal-rich-text-editor
+                                      class="pp-step-editor"
+                                      testId="pp-step-edit-input"
+                                      [text]="editStepTitle"
+                                      [format]="editStepFormat"
+                                      [ariaLabel]="
+                                        'PERSONAL_PROGRESS.EDIT_STEP' | translate
+                                      "
+                                      [disabled]="isSaving()"
+                                      (valueChange)="onEditStepChange($event)"
+                                    ></personal-rich-text-editor>
+                                    <div class="pp-step-edit-actions">
+                                      <button
+                                        type="button"
+                                        class="pp-primary pp-small"
+                                        data-testid="pp-step-edit-save"
+                                        (click)="saveStepEdit()"
+                                        [disabled]="isSaving() || !editStepTitle.trim()"
+                                      >
+                                        {{ 'PERSONAL_PROGRESS.SAVE' | translate }}
+                                      </button>
+                                      <button
+                                        type="button"
+                                        class="pp-small"
+                                        (click)="cancelStepEdit()"
+                                        [disabled]="isSaving()"
+                                      >
+                                        {{ 'PERSONAL_PROGRESS.CANCEL' | translate }}
+                                      </button>
+                                    </div>
+                                  </div>
+                                } @else {
+                                  <div
+                                    class="pp-step-title"
+                                    data-testid="pp-step-title"
+                                    [attr.data-step-id]="step.task.id"
+                                    [attr.data-step-title]="step.task.title"
+                                    [attr.data-project-id]="row.project.id"
+                                  >
+                                    <personal-text-view
+                                      [text]="step.task.title"
+                                      [format]="step.task.personalProgress?.stepFormat"
+                                    ></personal-text-view>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    class="pp-complete"
+                                    data-testid="pp-complete-step"
+                                    [attr.data-step-id]="step.task.id"
+                                    [attr.data-step-title]="step.task.title"
+                                    [disabled]="!isSelected(row) || isSaving()"
+                                    [attr.aria-label]="
+                                      'PERSONAL_PROGRESS.COMPLETE_STEP' | translate
+                                    "
+                                    (click)="completeStep(step)"
+                                  >
+                                    {{ 'PERSONAL_PROGRESS.COMPLETE' | translate }}
+                                  </button>
+                                }
+                              </li>
+                            }
+                          </ol>
+                        </div>
+                      }
+
+                      @if (isSelected(row)) {
+                        @if (insertingAfter()?.projectId === row.project.id) {
+                          <div class="pp-insert">
+                            <personal-rich-text-editor
+                              testId="pp-insert-input"
+                              [text]="insertTitle"
+                              [format]="insertFormat"
+                              [ariaLabel]="
+                                'PERSONAL_PROGRESS.INSERT_PLACEHOLDER' | translate
+                              "
+                              [disabled]="isSaving()"
+                              (valueChange)="onInsertChange($event)"
+                            ></personal-rich-text-editor>
+                            <div class="pp-insert-actions">
+                              <button
+                                type="button"
+                                class="pp-primary pp-small"
+                                data-testid="pp-insert-save"
+                                (click)="saveInsert()"
+                                [disabled]="isSaving() || !insertTitle.trim()"
+                              >
+                                {{ 'PERSONAL_PROGRESS.SAVE' | translate }}
+                              </button>
+                              <button
+                                type="button"
+                                class="pp-small"
+                                (click)="cancelInsert()"
+                              >
+                                {{ 'PERSONAL_PROGRESS.CANCEL' | translate }}
+                              </button>
+                            </div>
+                          </div>
+                        } @else {
+                          <button
+                            type="button"
+                            class="pp-append"
+                            data-testid="pp-append-step"
+                            (click)="beginAppend(row)"
+                            [disabled]="isSaving()"
+                          >
+                            {{ 'PERSONAL_PROGRESS.APPEND_STEP' | translate }}
+                          </button>
+                        }
+                      }
+                    </div>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      @if (recordExpanded()) {
+        <aside
+          class="pp-record-rail"
+          aria-label="记录展开操作"
+        >
+          <button
+            type="button"
+            class="pp-record-rail-button"
+            data-testid="pp-rail-restore"
+            title="收起"
+            aria-label="收起记录展开"
+            (click)="toggleRecordExpanded()"
+          >
+            &lt;&lt;&lt;
+          </button>
+        </aside>
+      }
     </div>
   }
 

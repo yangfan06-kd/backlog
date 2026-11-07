@@ -3,6 +3,7 @@ import {
   restorePersonalBackup,
 } from '../../utils/personal-backup-helpers';
 import { expect, test } from '../../fixtures/test.fixture';
+import { undoLatestCompletion } from '../../utils/personal-progress-helpers';
 import { skipOnboardingForE2E, waitForAngularStability } from '../../utils/waits';
 import type { Locator, Page } from '@playwright/test';
 import * as fs from 'node:fs';
@@ -441,7 +442,7 @@ test.describe('personal overview quadrants', () => {
     await expect(overviewRow(page, 'Linked A')).toContainText('Second linked step');
 
     await overviewRow(page, 'Linked A').getByTestId('po-open-progress').click();
-    await page.getByTestId('pp-undo').click();
+    await undoLatestCompletion(page);
     await expect(page.getByTestId('pp-status')).toHaveAttribute(
       'data-save-state',
       'saved',

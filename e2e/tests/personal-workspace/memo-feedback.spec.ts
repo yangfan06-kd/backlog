@@ -1,4 +1,5 @@
 import { expect, test } from '../../fixtures/test.fixture';
+import { setProjectQuadrant } from '../../utils/personal-progress-helpers';
 
 test('classifies selected project in progress and creates routines from the top', async ({
   page,
@@ -13,8 +14,7 @@ test('classifies selected project in progress and creates routines from the top'
   await expect(
     page.getByTestId('pp-project-row').filter({ hasText: '分类联动测试' }),
   ).toBeVisible();
-  await page.getByTestId('pp-quadrant').selectOption('urgent-important');
-  await expect(page.getByTestId('pp-status')).toHaveAttribute('data-save-state', 'saved');
+  await setProjectQuadrant(page, '分类联动测试', 'urgent-important');
   await page.goto('/#/personal-overview');
   await expect(
     page.getByTestId('po-quadrant').filter({ hasText: '分类联动测试' }),
