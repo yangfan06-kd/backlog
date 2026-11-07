@@ -98,12 +98,14 @@ describe('personal search projection', () => {
     ).toBeTrue();
   });
 
-  it('does not return archived, completed or deleted data', () => {
-    expect(
-      buildPersonalSearchResults(projects, tasks, notes, '归档').some(
-        (item) => item.title === '已归档项目',
-      ),
-    ).toBeFalse();
+  it('includes archived projects as explicit archived results', () => {
+    const archived = buildPersonalSearchResults(projects, tasks, notes, '归档').find(
+      (item) => item.title === '已归档项目',
+    );
+    expect(archived).toBeDefined();
+    expect(archived?.archived).toBeTrue();
+    expect(archived?.projectId).toBe('p3');
+    expect(archived?.route).toBe('/personal-archive');
     expect(buildPersonalSearchResults(projects, tasks, notes, '已经完成')).toEqual([]);
     expect(buildPersonalSearchResults(projects, tasks, notes, '已删除备忘')).toEqual([]);
   });
