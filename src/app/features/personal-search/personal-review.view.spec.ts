@@ -5,6 +5,11 @@ import {
   personalTaskData,
 } from '../personal-progress/personal-progress.model';
 import { buildPersonalReview } from './personal-review.view';
+import {
+  formatReviewSummary,
+  isCurrentReviewPeriod,
+  shiftReviewAnchor,
+} from './personal-review.view';
 
 const project = (id: string, title: string, overrides: Partial<Project> = {}): Project =>
   ({
@@ -170,5 +175,31 @@ describe('personal review projection', () => {
     expect(review.activeProjects).toEqual([]);
     expect(review.staleProjects).toEqual([]);
     expect(review.dayCounts).toEqual([]);
+  });
+
+  it('reviews a previous week through its full end', () => {
+    const review = buildPersonalReview([p1], [t1, t2], today, 'week', '2026-10-29');
+    expect(review.range.startDay).toBe('2026-10-26');
+    expect(review.range.dataEndDay).toBe('2026-11-01');
+    expect(review.range.periodEndDay).toBe('2026-11-01');
+    expect(review.completions).toEqual([]);
+  });
+
+  it('detects the current period and shifts week/month anchors', () => {
+    expect(isCurrentReviewPeriod('2026-11-05', today, 'week')).toBeTrue();
+    expect(isCurrentReviewPeriod('2026-10-29', today, 'week')).toBeFalse();
+    expect(shiftReviewAnchor('2026-11-05', 'week', -1)).toBe('2026-10-29');
+    expect(shiftReviewAnchor('2026-11-05', 'week', 1)).toBe('2026-11-12');
+    expect(shiftReviewAnchor('2026-11-05', 'month', -1)).toBe('2026-10-01');
+    expect(shiftReviewAnchor('2026-11-05', 'month', 1)).toBe('2026-12-01');
+  });
+
+  it('formats a copyable review summary', () => {
+    const review = buildPersonalReview([p1, p2], [t1, t2], today, 'week');
+    const summary = formatReviewSummary(review);
+    expect(summary).toContain('复盘');
+    expect(summary).toContain('完成 1 个步骤');
+    expect(summary).toContain('有推进 2 个项目');
+    expect(summary).toContain('- 去南区篮球场（做义工');
   });
 });
