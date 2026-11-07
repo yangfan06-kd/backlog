@@ -87,4 +87,36 @@ test.describe('personal search page', () => {
     await detail.getByText('打开项目', { exact: false }).click();
     await expect(page.getByTestId('pp-page')).toBeVisible();
   });
+
+  test('filters results and restores a recent search', async ({ page }) => {
+    await gotoProgress(page);
+    const title = `Filter project ${Date.now()}`;
+    await createProject(page, title);
+    await gotoSearch(page);
+    await page.getByTestId('personal-search-input').fill(title);
+    const result = page
+      .getByTestId('personal-search-result')
+      .filter({ hasText: title })
+      .first();
+    await expect(result).toBeVisible();
+
+    await page.getByTestId('personal-search-filters-toggle').click();
+    await page.getByTestId('personal-search-status-filter').selectOption('archived');
+    await expect(page.getByTestId('personal-search-empty')).toBeVisible();
+    await page.getByTestId('personal-search-status-filter').selectOption('active');
+    await expect(result).toBeVisible();
+
+    await result.click();
+    await expect(page.getByTestId('pp-page')).toBeVisible();
+    await page.goto('/#/personal-search');
+    await page.reload();
+    await page.getByTestId('personal-search-page').waitFor({ timeout: 30_000 });
+    await page.getByTestId('personal-search-input').fill('');
+    const recent = page.locator('.recent-chip').filter({ hasText: title }).first();
+    await expect(recent).toBeVisible();
+    await recent.click();
+    await expect(
+      page.getByTestId('personal-search-result').filter({ hasText: title }).first(),
+    ).toBeVisible();
+  });
 });
