@@ -56,6 +56,7 @@ import {
 } from './personal-progress.service';
 import {
   PersonalCommandResult,
+  PersonalProjectQuadrant,
   PersonalProgressEntry,
   personalProjectLifecycle,
   personalProjectQuadrant,
@@ -384,6 +385,7 @@ export class PersonalProgressPageComponent implements OnInit {
   private _rowOrder = inject(PersonalOverviewOrderService);
   newProjectTitle = '';
   newProjectDay = '';
+  newProjectQuadrant = 'unclassified';
   private readonly _newEntryBody = signal('');
   private readonly _newEntryFormat = signal<PersonalTextFormat | null>(null);
   get newEntryBody(): string {
@@ -879,11 +881,20 @@ export class PersonalProgressPageComponent implements OnInit {
     if (!(await this._ensureDraftHandled('switch'))) return;
     const queryVersion = this._queryVersion;
     const result = await this._run(() =>
-      this._service.createProject(nanoid(), title, 'project', this.newProjectDay || null),
+      this._service.createProject(
+        nanoid(),
+        title,
+        'project',
+        this.newProjectDay || null,
+        this.newProjectQuadrant === 'unclassified'
+          ? null
+          : (this.newProjectQuadrant as PersonalProjectQuadrant),
+      ),
     );
     if (result?.status === 'persisted') {
       this.newProjectTitle = '';
       this.newProjectDay = '';
+      this.newProjectQuadrant = 'unclassified';
       this.creatingProject.set(false);
       this._activateProject(result.value.projectId);
       if (this.activeFolderId()) {
