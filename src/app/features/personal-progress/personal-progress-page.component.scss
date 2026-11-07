@@ -115,6 +115,126 @@
   font-weight: var(--font-weight-medium);
 }
 
+.pp-board-head {
+  display: flex;
+  min-height: 28px;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s);
+  margin: var(--s2) 0 var(--s);
+}
+
+.pp-board-head .pp-current-project {
+  margin: 0;
+}
+
+.pp-project-filter-toggle {
+  display: inline-flex;
+  min-height: 28px;
+  align-items: center;
+  gap: 4px;
+  padding: 0 var(--s-half);
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--text-color-muted);
+  font: inherit;
+  font-size: var(--font-size-xs);
+  cursor: pointer;
+}
+
+.pp-project-filter-toggle:hover,
+.pp-project-filter-toggle.is-active {
+  color: var(--text-color);
+}
+
+.pp-filter-count {
+  display: inline-grid;
+  min-width: 16px;
+  height: 16px;
+  place-items: center;
+  border-radius: 8px;
+  background: var(--c-primary);
+  color: var(--bg);
+  font-size: 10px;
+}
+
+.pp-project-filter-panel {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s);
+  margin-bottom: var(--s);
+  padding: var(--s) var(--s2);
+  border: 1px solid var(--separator-color);
+  border-radius: 6px;
+  background: var(--card-bg);
+}
+
+.pp-project-filter-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.pp-project-filter-chip {
+  min-height: 28px;
+  padding: 0 var(--s);
+  border: 1px solid var(--separator-color);
+  border-radius: 14px;
+  background: transparent;
+  color: var(--text-color-muted);
+  font: inherit;
+  font-size: var(--font-size-xs);
+  cursor: pointer;
+}
+
+.pp-project-filter-chip.is-active {
+  border-color: var(--c-primary);
+  background: var(--project1-hover-bg, var(--hover-bg));
+  color: var(--text-color);
+}
+
+.pp-project-filter-quadrant {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--text-color-muted);
+  font-size: var(--font-size-xs);
+}
+
+.pp-project-filter-quadrant select {
+  min-height: 28px;
+  padding: 0 var(--s-half);
+  border: 1px solid var(--separator-color);
+  border-radius: 5px;
+  background: var(--bg);
+  color: var(--text-color);
+  font: inherit;
+  font-size: var(--font-size-xs);
+}
+
+.pp-project-filter-reset {
+  min-height: 28px;
+  padding: 0 var(--s-half);
+  border: 0;
+  background: transparent;
+  color: var(--text-color-muted);
+  font: inherit;
+  font-size: var(--font-size-xs);
+  cursor: pointer;
+}
+
+.pp-project-filter-reset:hover {
+  color: var(--text-color);
+}
+
+.pp-project-filter-hint {
+  color: var(--text-color-muted);
+  font-size: var(--font-size-xs);
+  opacity: 0.8;
+}
+
 .pp-toolbar-create {
   flex: 0 1 auto;
 
