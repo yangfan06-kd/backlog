@@ -180,6 +180,7 @@ export class PersonalRoutinePageComponent implements OnInit {
   private _editingEntryRevision = 0;
   private readonly _restoreInput =
     viewChild<ElementRef<HTMLInputElement>>('restoreInput');
+  private readonly _createOrigin = viewChild<CdkOverlayOrigin>('createOrigin');
 
   readonly range = signal<PersonalRoutineRange>('month');
   readonly view = computed(() =>
@@ -442,6 +443,8 @@ export class PersonalRoutinePageComponent implements OnInit {
     if (result?.status !== 'persisted') return false;
     this.newItemTitle.set('');
     this._activateItem(result.value.projectId);
+    const createOrigin = this._createOrigin();
+    if (createOrigin) this.editorOrigin.set(createOrigin);
     this._selectedDay.set(this.today());
     this._entryDayFollowsToday = true;
     if (this._queryTargetItemId) {
