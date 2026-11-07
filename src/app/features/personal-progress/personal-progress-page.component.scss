@@ -717,6 +717,17 @@
   box-shadow: 1px 0 0 var(--separator-color);
 }
 
+.pp-board.is-single-date {
+  min-width: calc(
+    var(--pp-project-width) + var(--pp-day-min-width) + var(--pp-steps-width)
+  );
+}
+
+.pp-board.is-single-date .pp-project-col {
+  width: 100%;
+  min-width: 0;
+}
+
 // Date headers share the normal sticky z-index and paint later in DOM order;
 // lift the fixed left/right corner headers above them.
 .pp-board thead th.pp-project-col {
