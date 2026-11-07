@@ -141,6 +141,19 @@ const QUICK_ROUTES = [
             [attr.aria-expanded]="showFilters()"
             (click)="showFilters.set(!showFilters())"
           >
+            <svg
+              class="search-filter-icon"
+              viewBox="0 0 16 16"
+              aria-hidden="true"
+            >
+              <path
+                d="M2.5 3.5h11l-4.2 4.7v4.1l-2.6.9V8.2L2.5 3.5Z"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.4"
+                stroke-linejoin="round"
+              />
+            </svg>
             筛选
             @if (activeFilterCount() > 0) {
               <span class="filter-count">{{ activeFilterCount() }}</span>
@@ -557,20 +570,27 @@ const QUICK_ROUTES = [
         display: inline-flex;
         align-items: center;
         gap: 5px;
-        min-height: 26px;
+        min-height: 32px;
         padding: 0 var(--s-half);
         border: 0;
-        border-radius: 5px;
+        border-radius: 4px;
         background: transparent;
-        color: var(--text-color-muted);
+        color: var(--text-color);
         font: inherit;
-        font-size: var(--font-size-xs);
+        font-size: var(--font-size-sm);
+        font-weight: var(--font-weight-medium);
         cursor: pointer;
       }
 
       .search-options-toggle:hover,
       .search-options-toggle.is-active {
-        color: var(--text-color);
+        color: var(--c-primary);
+      }
+
+      .search-filter-icon {
+        width: 15px;
+        height: 15px;
+        flex: 0 0 auto;
       }
 
       .filter-count {
