@@ -323,6 +323,7 @@
         <table
           class="pp-board"
           [class.is-record-expanded]="recordExpanded()"
+          [class.is-single-date]="isSingleDateLayout()"
           [style.--pp-date-count]="displayHistoryDates().length"
           [style.--pp-day-count]="displayHistoryDates().length + 1"
           [style.gridTemplateColumns]="gridTemplateColumns()"
