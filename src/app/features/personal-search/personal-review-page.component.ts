@@ -11,6 +11,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { selectAllProjects } from '../project/store/project.selectors';
 import { selectAllTasks } from '../tasks/store/task.selectors';
 import { PersonalProgressService } from '../personal-progress/personal-progress.service';
+import { SnackService } from '../../core/snack/snack.service';
 import {
   PersonalReviewActiveProject,
   PersonalReviewCompletion,
@@ -19,6 +20,9 @@ import {
   buildPersonalReview,
   formatReviewDay,
   formatReviewRange,
+  formatReviewSummary,
+  isCurrentReviewPeriod,
+  shiftReviewAnchor,
 } from './personal-review.view';
 
 @Component({
@@ -35,29 +39,70 @@ import {
           <h1>复盘</h1>
           <p>回看这一段时间，决定下一步先做什么。</p>
         </div>
-        <div
-          class="range-switch"
-          role="group"
-          aria-label="复盘范围"
-        >
-          <button
-            type="button"
-            data-testid="personal-review-week"
-            [class.is-active]="period() === 'week'"
-            [attr.aria-pressed]="period() === 'week'"
-            (click)="period.set('week')"
+        <div class="review-head-actions">
+          <div
+            class="range-switch"
+            role="group"
+            aria-label="复盘范围"
           >
-            本周
-          </button>
-          <button
-            type="button"
-            data-testid="personal-review-month"
-            [class.is-active]="period() === 'month'"
-            [attr.aria-pressed]="period() === 'month'"
-            (click)="period.set('month')"
-          >
-            本月
-          </button>
+            <button
+              type="button"
+              data-testid="personal-review-week"
+              [class.is-active]="period() === 'week'"
+              [attr.aria-pressed]="period() === 'week'"
+              (click)="setPeriod('week')"
+            >
+              本周
+            </button>
+            <button
+              type="button"
+              data-testid="personal-review-month"
+              [class.is-active]="period() === 'month'"
+              [attr.aria-pressed]="period() === 'month'"
+              (click)="setPeriod('month')"
+            >
+              本月
+            </button>
+          </div>
+          <div class="review-nav">
+            <button
+              type="button"
+              data-testid="personal-review-prev"
+              aria-label="上一个周期"
+              title="上一个周期"
+              (click)="movePeriod(-1)"
+            >
+              ←
+            </button>
+            <button
+              type="button"
+              data-testid="personal-review-current"
+              [disabled]="isCurrentPeriod()"
+              (click)="goToCurrentPeriod()"
+            >
+              回到{{ periodLabel() }}
+            </button>
+            <button
+              type="button"
+              data-testid="personal-review-next"
+              aria-label="下一个周期"
+              title="下一个周期"
+              [disabled]="isCurrentPeriod()"
+              (click)="movePeriod(1)"
+            >
+              →
+            </button>
+            <button
+              type="button"
+              data-testid="personal-review-copy"
+              [disabled]="
+                review().completions.length === 0 && review().activeProjects.length === 0
+              "
+              (click)="copySummary()"
+            >
+              复制摘要
+            </button>
+          </div>
         </div>
       </header>
 
@@ -241,6 +286,41 @@ import {
         color: var(--text-color);
       }
 
+      .review-head-actions {
+        display: flex;
+        flex: 0 0 auto;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: var(--s-half);
+      }
+
+      .review-nav {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+
+      .review-nav button {
+        min-height: 26px;
+        padding: 0 var(--s-half);
+        border: 1px solid var(--separator-color);
+        border-radius: 5px;
+        background: var(--card-bg);
+        color: var(--text-color-muted);
+        font: inherit;
+        font-size: var(--font-size-xs);
+        cursor: pointer;
+      }
+
+      .review-nav button:hover:not(:disabled) {
+        color: var(--text-color);
+      }
+
+      .review-nav button:disabled {
+        cursor: default;
+        opacity: 0.42;
+      }
+
       .review-period {
         margin: 0 0 var(--s2);
         color: var(--text-color-muted);
@@ -414,6 +494,11 @@ import {
         .range-switch {
           margin-top: var(--s);
         }
+
+        .review-head-actions {
+          align-items: flex-start;
+          margin-top: var(--s);
+        }
       }
     `,
   ],
@@ -422,6 +507,7 @@ export class PersonalReviewPageComponent {
   private readonly _store = inject(Store);
   private readonly _router = inject(Router);
   private readonly _progress = inject(PersonalProgressService);
+  private readonly _snack = inject(SnackService);
   private readonly _projects = toSignal(this._store.select(selectAllProjects), {
     initialValue: [],
   });
@@ -430,15 +516,43 @@ export class PersonalReviewPageComponent {
   });
 
   readonly period = signal<PersonalReviewPeriod>('week');
+  readonly anchorDay = signal(this._progress.todayStr());
   readonly review = computed(() =>
     buildPersonalReview(
       this._projects(),
       this._tasks(),
       this._progress.todayStr(),
       this.period(),
+      this.anchorDay(),
     ),
   );
   readonly rangeLabel = computed(() => formatReviewRange(this.review().range));
+  readonly periodLabel = computed(() => (this.period() === 'week' ? '本周' : '本月'));
+  readonly isCurrentPeriod = computed(() =>
+    isCurrentReviewPeriod(this.anchorDay(), this._progress.todayStr(), this.period()),
+  );
+
+  setPeriod(period: PersonalReviewPeriod): void {
+    this.period.set(period);
+    this.anchorDay.set(this._progress.todayStr());
+  }
+
+  movePeriod(direction: -1 | 1): void {
+    this.anchorDay.update((day) => shiftReviewAnchor(day, this.period(), direction));
+  }
+
+  goToCurrentPeriod(): void {
+    this.anchorDay.set(this._progress.todayStr());
+  }
+
+  async copySummary(): Promise<void> {
+    try {
+      await navigator.clipboard.writeText(formatReviewSummary(this.review()));
+      this._snack.open('已复制复盘摘要');
+    } catch {
+      this._snack.open('复制复盘摘要失败，请重试');
+    }
+  }
 
   formatDay(day: string): string {
     return formatReviewDay(day);
