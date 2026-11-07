@@ -322,36 +322,113 @@
     } @else {
       <div></div>
     }
-    @if (!activeFolderId()) {
+    <div class="pp-board-tools">
+      @if (!activeFolderId()) {
+        <button
+          type="button"
+          class="pp-project-filter-toggle"
+          data-testid="pp-project-filter-toggle"
+          [class.is-active]="hasProjectFilters()"
+          [attr.aria-expanded]="projectFiltersOpen()"
+          (click)="toggleProjectFilters()"
+        >
+          <svg
+            class="pp-filter-icon"
+            viewBox="0 0 16 16"
+            aria-hidden="true"
+          >
+            <path
+              d="M2.5 3.5h11l-4.2 4.7v4.1l-2.6.9V8.2L2.5 3.5Z"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.4"
+              stroke-linejoin="round"
+            />
+          </svg>
+          筛选
+          @if (projectFilterCount() > 0) {
+            <span class="pp-filter-count">{{ projectFilterCount() }}</span>
+          }
+          <span aria-hidden="true">{{ projectFiltersOpen() ? '⌃' : '⌄' }}</span>
+        </button>
+      }
+      @if (!activeFolderId()) {
+        <button
+          type="button"
+          class="pp-project-filter-toggle"
+          data-testid="pp-batch-toggle"
+          [class.is-active]="selectionMode()"
+          (click)="toggleSelectionMode()"
+        >
+          批量
+          @if (batchSelection().size > 0) {
+            <span class="pp-filter-count">{{ batchSelection().size }}</span>
+          }
+        </button>
+      }
+    </div>
+  </div>
+
+  @if (!activeFolderId() && selectionMode()) {
+    <div class="pp-batch-bar">
+      <span>已选 {{ batchSelection().size }} 个项目</span>
+      <select
+        data-testid="pp-batch-folder"
+        aria-label="批量移动到文件夹"
+        (change)="onBatchFolderChange($event)"
+      >
+        <option value="">未分组</option>
+        @for (folder of folders(); track folder.id) {
+          <option [value]="folder.id">{{ folder.name }}</option>
+        }
+      </select>
       <button
         type="button"
-        class="pp-project-filter-toggle"
-        data-testid="pp-project-filter-toggle"
-        [class.is-active]="hasProjectFilters()"
-        [attr.aria-expanded]="projectFiltersOpen()"
-        (click)="toggleProjectFilters()"
+        data-testid="pp-batch-move"
+        [disabled]="batchSelection().size === 0"
+        (click)="moveBatchToFolder()"
       >
-        <svg
-          class="pp-filter-icon"
-          viewBox="0 0 16 16"
-          aria-hidden="true"
-        >
-          <path
-            d="M2.5 3.5h11l-4.2 4.7v4.1l-2.6.9V8.2L2.5 3.5Z"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.4"
-            stroke-linejoin="round"
-          />
-        </svg>
-        筛选
-        @if (projectFilterCount() > 0) {
-          <span class="pp-filter-count">{{ projectFilterCount() }}</span>
-        }
-        <span aria-hidden="true">{{ projectFiltersOpen() ? '⌃' : '⌄' }}</span>
+        移动
       </button>
-    }
-  </div>
+      <button
+        type="button"
+        class="pp-batch-archive"
+        data-testid="pp-batch-archive"
+        [disabled]="batchSelection().size === 0"
+        (click)="archiveBatch()"
+      >
+        归档
+      </button>
+      <select
+        data-testid="pp-batch-quadrant"
+        aria-label="批量设置四象限"
+        (change)="onBatchQuadrantChange($event)"
+      >
+        <option value="">四象限…</option>
+        <option value="unclassified">未分类</option>
+        @for (option of quadrantOptions; track option.id) {
+          <option [value]="option.id">{{ option.labelKey | translate }}</option>
+        }
+      </select>
+      <button
+        type="button"
+        class="pp-batch-archive"
+        data-testid="pp-batch-quadrant-apply"
+        [disabled]="batchSelection().size === 0 || !batchQuadrantId()"
+        (click)="applyBatchQuadrant()"
+      >
+        应用
+      </button>
+      <button
+        type="button"
+        class="pp-link"
+        data-testid="pp-batch-cancel"
+        (click)="toggleSelectionMode()"
+      >
+        取消
+      </button>
+    </div>
+  }
 
   @if (!activeFolderId() && projectFiltersOpen()) {
     <div class="pp-project-filter-panel">
@@ -481,12 +558,16 @@
                     [cdkConnectedOverlayOpen]="
                       manualEntryOpen() && !draftPrompt() && inlineNewProjectId() === null
                     "
+                    [cdkConnectedOverlayPanelClass]="
+                      manualEditorBlocked() ? 'pp-manual-overlay-blocked' : ''
+                    "
                     [cdkConnectedOverlayPositions]="editorPositions"
                     [cdkConnectedOverlayViewportMargin]="8"
                     [cdkConnectedOverlayPush]="true"
                   >
                     <section
                       class="pp-add-entry pp-editor-panel pp-manual-panel"
+                      [class.is-blocked]="manualEditorBlocked()"
                       role="dialog"
                       aria-label="补记完成事项"
                     >
@@ -580,13 +661,16 @@
           <tbody
             cdkDropList
             [cdkDropListData]="boardRows()"
-            [cdkDropListDisabled]="isSaving() || !!activeDraft() || hasProjectFilters()"
+            [cdkDropListDisabled]="
+              isSaving() || !!activeDraft() || hasProjectFilters() || selectionMode()
+            "
             (cdkDropListDropped)="dropProjectRows($event)"
           >
             @for (row of boardRows(); track row.project.id) {
               <tr
                 data-testid="pp-project-row"
                 cdkDrag
+                [cdkDragDisabled]="selectionMode()"
                 [cdkDragData]="row"
                 [cdkDragStartDelay]="{ mouse: 0, touch: 320 }"
                 [attr.data-project-id]="row.project.id"
@@ -603,6 +687,16 @@
                 >
                 <th class="pp-project-col pp-sticky-left">
                   <div class="pp-project-cell">
+                    @if (selectionMode()) {
+                      <input
+                        type="checkbox"
+                        class="pp-batch-checkbox"
+                        data-testid="pp-batch-checkbox"
+                        [checked]="isBatchSelected(row.project.id)"
+                        (change)="toggleBatchSelect(row.project.id)"
+                        (click)="$event.stopPropagation()"
+                      />
+                    }
                     <button
                       type="button"
                       class="pp-project-title"
