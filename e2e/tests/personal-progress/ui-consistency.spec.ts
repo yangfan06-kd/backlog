@@ -42,6 +42,13 @@ const saveRoutineRecord = async (
   body: string,
 ): Promise<void> => {
   await selectRoutineItem(page, title);
+  const cell = page
+    .getByTestId('pr-item-row')
+    .filter({ hasText: title })
+    .locator('.pr-today-cell')
+    .first();
+  await cell.dblclick();
+  await expect(page.getByTestId('pr-entry-day')).toBeVisible();
   await page.getByTestId('pr-entry-day').fill(day);
   await page.getByTestId('pr-entry-body').fill(body);
   await page.getByTestId('pr-save-entry').click();
@@ -51,7 +58,12 @@ const saveRoutineRecord = async (
 };
 
 const todayValue = async (page: Page): Promise<string> =>
-  page.getByTestId('pr-entry-day').inputValue();
+  page.evaluate(() => {
+    const date = new Date();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${date.getFullYear()}-${month}-${day}`;
+  });
 
 const boxX = async (locator: Locator): Promise<number> => {
   const box = await locator.boundingBox();
