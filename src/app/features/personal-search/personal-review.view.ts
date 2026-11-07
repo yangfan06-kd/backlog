@@ -114,19 +114,17 @@ export const buildPersonalReview = (
   tasks: Task[],
   today: string,
   period: PersonalReviewPeriod,
+  anchorDay: string = today,
 ): PersonalReview => {
-  const range: PersonalReviewRange =
-    period === 'week'
-      ? {
-          startDay: startOfWeek(today),
-          dataEndDay: today,
-          periodEndDay: endOfWeek(today),
-        }
-      : {
-          startDay: startOfMonth(today),
-          dataEndDay: today,
-          periodEndDay: endOfMonth(today),
-        };
+  const anchorStart =
+    period === 'week' ? startOfWeek(anchorDay) : startOfMonth(anchorDay);
+  const anchorEnd = period === 'week' ? endOfWeek(anchorDay) : endOfMonth(anchorDay);
+  const todayStart = period === 'week' ? startOfWeek(today) : startOfMonth(today);
+  const range: PersonalReviewRange = {
+    startDay: anchorStart,
+    dataEndDay: anchorStart === todayStart ? today : anchorEnd,
+    periodEndDay: anchorEnd,
+  };
 
   const projectsById = new Map(projects.map((project) => [project.id, project]));
   const completions: PersonalReviewCompletion[] = [];
@@ -263,4 +261,57 @@ export const formatReviewRange = (range: PersonalReviewRange): string => {
   return range.dataEndDay === range.periodEndDay
     ? `${start} — ${end}`
     : `${start} — ${end} · 截至今天`;
+};
+
+export const startOfReviewPeriod = (day: string, period: PersonalReviewPeriod): string =>
+  period === 'week' ? startOfWeek(day) : startOfMonth(day);
+
+export const isCurrentReviewPeriod = (
+  anchorDay: string,
+  today: string,
+  period: PersonalReviewPeriod,
+): boolean =>
+  startOfReviewPeriod(anchorDay, period) === startOfReviewPeriod(today, period);
+
+export const shiftReviewAnchor = (
+  anchorDay: string,
+  period: PersonalReviewPeriod,
+  direction: -1 | 1,
+): string => {
+  if (period === 'week') return addDays(anchorDay, direction * 7);
+  const date = fromDay(anchorDay);
+  date.setDate(1);
+  date.setMonth(date.getMonth() + direction);
+  return toDay(date);
+};
+
+export const formatReviewSummary = (review: PersonalReview): string => {
+  const lines = [
+    `复盘 ${formatReviewRange(review.range)}`,
+    '',
+    `完成 ${review.completions.length} 个步骤`,
+    `有推进 ${review.activeProjects.length} 个项目`,
+    `需要回看 ${review.staleProjects.length} 个项目`,
+  ];
+  if (review.completions.length) {
+    lines.push('', '完成：');
+    for (const item of review.completions) {
+      lines.push(
+        `- ${item.title}（${item.projectTitle} · ${formatReviewDay(item.day)}）`,
+      );
+    }
+  }
+  if (review.activeProjects.length) {
+    lines.push('', '有推进：');
+    for (const item of review.activeProjects) {
+      lines.push(`- ${item.title}`);
+    }
+  }
+  if (review.staleProjects.length) {
+    lines.push('', '需要回看：');
+    for (const item of review.staleProjects) {
+      lines.push(`- ${item.title}`);
+    }
+  }
+  return lines.join('\n');
 };
