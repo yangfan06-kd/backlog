@@ -202,6 +202,10 @@ export class PersonalProgressPageComponent implements OnInit {
   readonly projectQuickFilter = signal<'all' | 'remaining' | 'week' | 'stale'>('all');
   readonly projectQuadrantFilter = signal('all');
   readonly projectFiltersOpen = signal(false);
+  readonly selectionMode = signal(false);
+  readonly batchSelection = signal<ReadonlySet<string>>(new Set());
+  readonly batchFolderId = signal('');
+  readonly batchQuadrantId = signal('');
   readonly projectFilterOptions: {
     id: 'all' | 'remaining' | 'week' | 'stale';
     label: string;
@@ -331,6 +335,92 @@ export class PersonalProgressPageComponent implements OnInit {
 
   toggleProjectFilters(): void {
     this.projectFiltersOpen.update((open) => !open);
+  }
+
+  toggleSelectionMode(): void {
+    this.selectionMode.update((active) => !active);
+    this.batchSelection.set(new Set());
+  }
+
+  isBatchSelected(projectId: string): boolean {
+    return this.batchSelection().has(projectId);
+  }
+
+  toggleBatchSelect(projectId: string): void {
+    const next = new Set(this.batchSelection());
+    if (next.has(projectId)) next.delete(projectId);
+    else next.add(projectId);
+    this.batchSelection.set(next);
+  }
+
+  onBatchFolderChange(event: Event): void {
+    this.batchFolderId.set((event.target as HTMLSelectElement).value);
+  }
+
+  onBatchQuadrantChange(event: Event): void {
+    this.batchQuadrantId.set((event.target as HTMLSelectElement).value);
+  }
+
+  async applyBatchQuadrant(): Promise<void> {
+    const selected = this.batchSelection();
+    const value = this.batchQuadrantId();
+    if (!selected.size || !value || this.isSaving()) return;
+    if (value !== 'unclassified' && !isPersonalProjectQuadrant(value)) return;
+    const rows = this._view().rows.filter((row) => selected.has(row.project.id));
+    for (const row of rows) {
+      const result = await this._run(() =>
+        this._service.setProjectQuadrant({
+          operationId: nanoid(),
+          projectId: row.project.id,
+          expectedRevision: personalProjectQuadrant(row.project).revision,
+          quadrant: value === 'unclassified' ? null : (value as PersonalProjectQuadrant),
+        }),
+      );
+      if (result?.status !== 'persisted') break;
+    }
+    this.batchSelection.set(new Set());
+    this.selectionMode.set(false);
+    this.batchQuadrantId.set('');
+    this.markSaved();
+  }
+
+  moveBatchToFolder(): void {
+    const selected = this.batchSelection();
+    if (!selected.size) return;
+    const folderId = this.batchFolderId() || null;
+    for (const projectId of selected) this._folders.assign(projectId, folderId);
+    this.batchSelection.set(new Set());
+    this.selectionMode.set(false);
+    this.batchFolderId.set('');
+    this.markSaved();
+  }
+
+  async archiveBatch(): Promise<void> {
+    const selected = this.batchSelection();
+    if (!selected.size || this.isSaving()) return;
+    if (!(await this._ensureDraftHandled('switch'))) return;
+    if (
+      !window.confirm(
+        `确认归档已选 ${selected.size} 个项目？归档后可在归档与回收站恢复。`,
+      )
+    ) {
+      return;
+    }
+    const rows = this._view().rows.filter((row) => selected.has(row.project.id));
+    for (const row of rows) {
+      const result = await this._run(() =>
+        this._lifecycle.finishProject({
+          operationId: nanoid(),
+          projectId: row.project.id,
+          expectedRevision: personalProjectLifecycle(row.project).revision,
+        }),
+      );
+      if (result?.status !== 'persisted') break;
+      this._service.resetRecentUndoForProject(row.project.id);
+    }
+    this.batchSelection.set(new Set());
+    this.selectionMode.set(false);
+    this.markSaved();
   }
 
   setProjectQuickFilter(quickFilter: 'all' | 'remaining' | 'week' | 'stale'): void {
@@ -720,7 +810,9 @@ export class PersonalProgressPageComponent implements OnInit {
   private _activateProject(projectId: string): void {
     // An empty focused manual editor can outlive a same-route navigation.
     // Rebind its owner even when focus does not fire again.
-    this._clearDraft();
+    const preserveEmptyManualEntry =
+      this.manualEntryOpen() && !this._newEntryBody().trim();
+    if (!preserveEmptyManualEntry) this._clearDraft();
     this._selectedProjectId.set(projectId);
     this.newEntryProjectId = projectId;
     this.targetNotice.set(null);
@@ -837,7 +929,11 @@ export class PersonalProgressPageComponent implements OnInit {
   }
 
   async focusBackfill(): Promise<void> {
-    if (this.manualEditorBlocked() || this.inlineNewProjectId()) {
+    if (this.manualEditorBlocked()) {
+      this.manualEntryOpen.set(true);
+      return;
+    }
+    if (this.inlineNewProjectId()) {
       if (!(await this._ensureDraftHandled('edit'))) return;
       this.manualEntryOpen.set(false);
       this._clearDraft();
@@ -1457,7 +1553,9 @@ export class PersonalProgressPageComponent implements OnInit {
       }),
     );
     if (result?.status === 'persisted') {
+      const keepManualEntry = this.manualEntryOpen();
       this._clearDraft();
+      if (keepManualEntry) this.manualEntryOpen.set(true);
       this.markSaved();
     }
   }
