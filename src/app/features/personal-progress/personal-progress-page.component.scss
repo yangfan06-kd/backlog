@@ -130,22 +130,29 @@
 
 .pp-project-filter-toggle {
   display: inline-flex;
-  min-height: 28px;
+  min-height: 34px;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   padding: 0 var(--s-half);
   border: 0;
-  border-radius: 5px;
+  border-radius: 4px;
   background: transparent;
-  color: var(--text-color-muted);
+  color: var(--text-color);
   font: inherit;
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
   cursor: pointer;
 }
 
 .pp-project-filter-toggle:hover,
 .pp-project-filter-toggle.is-active {
-  color: var(--text-color);
+  color: var(--c-primary);
+}
+
+.pp-filter-icon {
+  width: 15px;
+  height: 15px;
+  flex: 0 0 auto;
 }
 
 .pp-filter-count {
@@ -381,7 +388,11 @@
 }
 
 .pp-folder-create {
-  font-size: var(--font-size-xs);
+  min-height: 32px;
+  padding: 0 var(--s-half);
+  color: var(--text-color);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
 }
 
 .pp-folder-create:hover,
