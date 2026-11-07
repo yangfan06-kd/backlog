@@ -153,6 +153,27 @@
     }
   }
 
+  .pp-create-quadrant {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--text-color-muted);
+
+    select {
+      width: 120px;
+      min-height: 32px;
+      padding: 0 6px;
+      border: 1px solid var(--separator-color);
+      border-radius: var(--radius-sm, 4px);
+      background: var(--card-bg);
+      color: var(--text-color);
+      font: inherit;
+      font-size: 12px;
+    }
+  }
+
   .pp-board-scroll,
   .pr-board-scroll {
     border-radius: 12px;
