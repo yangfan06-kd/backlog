@@ -198,10 +198,60 @@ export class PersonalProgressPageComponent implements OnInit {
         : !assignments[row.project.id],
     );
   });
+  readonly projectQuickFilter = signal<'all' | 'remaining' | 'week' | 'stale'>('all');
+  readonly projectQuadrantFilter = signal('all');
+  readonly projectFiltersOpen = signal(false);
+  readonly projectFilterOptions: {
+    id: 'all' | 'remaining' | 'week' | 'stale';
+    label: string;
+  }[] = [
+    { id: 'all', label: '全部' },
+    { id: 'remaining', label: '还有步骤' },
+    { id: 'week', label: '本周有记录' },
+    { id: 'stale', label: '30 天无记录' },
+  ];
+  readonly quadrantFilterOptions = PERSONAL_OVERVIEW_GROUPS;
+  readonly hasProjectFilters = computed(
+    () => this.projectQuickFilter() !== 'all' || this.projectQuadrantFilter() !== 'all',
+  );
+  readonly projectFilterCount = computed(
+    () =>
+      (this.projectQuickFilter() === 'all' ? 0 : 1) +
+      (this.projectQuadrantFilter() === 'all' ? 0 : 1),
+  );
+  readonly boardRows = computed(() => {
+    const rows = this.visibleRows();
+    if (this.activeFolderId() || !this.hasProjectFilters()) return rows;
+    const today = this.view().today;
+    const weekStart = this._weekStart(today);
+    const staleCutoff = this._shiftDay(today, -30);
+    const quickFilter = this.projectQuickFilter();
+    const quadrant = this.projectQuadrantFilter();
+    return rows.filter((row) => {
+      if (quickFilter === 'remaining' && row.steps.length === 0) return false;
+      if (quickFilter === 'week') {
+        const hasWeekRecord = [...row.entriesByDay.keys()].some(
+          (day) => day >= weekStart && day <= today,
+        );
+        if (!hasWeekRecord) return false;
+      }
+      if (quickFilter === 'stale') {
+        if (row.steps.length === 0) return false;
+        const days = [...row.entriesByDay.keys()].sort();
+        const lastDay = days.at(-1) ?? null;
+        const plannedDay = row.project.personalProgress?.planning?.day ?? null;
+        if (lastDay ? lastDay >= staleCutoff : !plannedDay || plannedDay >= staleCutoff) {
+          return false;
+        }
+      }
+      if (quadrant !== 'all' && this.currentQuadrant(row) !== quadrant) return false;
+      return true;
+    });
+  });
   readonly historyDates = computed(() => {
     const today = this.view().today;
     const dates = new Set<string>();
-    for (const row of this.visibleRows()) {
+    for (const row of this.boardRows()) {
       if (!row.isExpanded) continue;
       for (const day of row.entriesByDay.keys()) {
         if (day !== today) dates.add(day);
@@ -277,6 +327,42 @@ export class PersonalProgressPageComponent implements OnInit {
     );
     if (result?.status === 'persisted') this.markSaved();
   }
+
+  toggleProjectFilters(): void {
+    this.projectFiltersOpen.update((open) => !open);
+  }
+
+  setProjectQuickFilter(quickFilter: 'all' | 'remaining' | 'week' | 'stale'): void {
+    this.projectQuickFilter.set(quickFilter);
+  }
+
+  onProjectQuadrantFilter(event: Event): void {
+    this.projectQuadrantFilter.set((event.target as HTMLSelectElement).value);
+  }
+
+  resetProjectFilters(): void {
+    this.projectQuickFilter.set('all');
+    this.projectQuadrantFilter.set('all');
+  }
+
+  private _weekStart(day: string): string {
+    const [year, month, date] = day.split('-').map(Number);
+    const current = new Date(year, month - 1, date);
+    current.setDate(current.getDate() - ((current.getDay() + 6) % 7));
+    return this._dateToDay(current);
+  }
+
+  private _shiftDay(day: string, amount: number): string {
+    const [year, month, date] = day.split('-').map(Number);
+    const current = new Date(year, month - 1, date);
+    current.setDate(current.getDate() + amount);
+    return this._dateToDay(current);
+  }
+
+  private _dateToDay(date: Date): string {
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+  }
+
   readonly draftPrompt = signal<DraftPrompt | null>(null);
   readonly targetNotice = signal<string | null>(null);
   readonly folderMenuId = signal<string | null>(null);
@@ -891,7 +977,7 @@ export class PersonalProgressPageComponent implements OnInit {
   }
 
   async dropProjectRows(event: CdkDragDrop<PersonalProgressProjectRow[]>): Promise<void> {
-    const rows = this.visibleRows();
+    const rows = this.boardRows();
     if (
       event.previousContainer !== event.container ||
       event.previousIndex === event.currentIndex
@@ -1044,7 +1130,7 @@ export class PersonalProgressPageComponent implements OnInit {
   ): Promise<void> {
     event.preventDefault();
     event.stopPropagation();
-    const rows = this.visibleRows(),
+    const rows = this.boardRows(),
       index = rows.findIndex((item) => item.project.id === row.project.id);
     const target = rows[index + delta];
     if (target) await this._moveProjectRow(row, target, delta > 0);
