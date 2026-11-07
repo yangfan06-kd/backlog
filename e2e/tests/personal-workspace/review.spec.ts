@@ -23,6 +23,25 @@ test.describe('personal review page', () => {
     await expect(page.getByText('每日记录')).toBeVisible();
   });
 
+  test('can move to a previous period and return to the current one', async ({
+    page,
+  }) => {
+    await gotoReview(page);
+    const next = page.getByTestId('personal-review-next');
+    const prev = page.getByTestId('personal-review-prev');
+    const current = page.getByTestId('personal-review-current');
+    await expect(next).toBeDisabled();
+    await expect(current).toBeDisabled();
+
+    await prev.click();
+    await expect(next).toBeEnabled();
+    await expect(current).toBeEnabled();
+    await current.click();
+
+    await expect(next).toBeDisabled();
+    await expect(current).toBeDisabled();
+  });
+
   test('shortcut guide is visible in settings', async ({ page }) => {
     await page.goto('/#/personal-settings');
     await page.reload();
