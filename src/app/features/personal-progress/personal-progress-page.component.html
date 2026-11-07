@@ -132,11 +132,15 @@
               #folderCard
               class="pp-folder-card"
               data-testid="pp-folder-card"
+              draggable="true"
+              title="拖动排序，点击进入"
               [attr.data-folder-id]="folder.id"
               [class.is-folder-drop-target]="folderDropTargetId() === folder.id"
+              (dragstart)="startFolderDrag(folder.id, $event)"
+              (dragend)="endFolderDrag()"
               (dragover)="allowFolderDrop($event)"
               (drop)="dropFolderOn(folder.id, $event)"
-              (click)="openFolder(folder.id)"
+              (click)="openFolderFromCard(folder.id)"
             >
               <div class="pp-folder-card-head">
                 @if (renamingFolderId() === folder.id) {
@@ -153,14 +157,7 @@
                     (click)="$event.stopPropagation()"
                   />
                 } @else {
-                  <span
-                    class="pp-folder-name"
-                    draggable="true"
-                    title="拖动排序"
-                    (dragstart)="startFolderDrag(folder.id, $event)"
-                    (dragend)="endFolderDrag()"
-                    >{{ folder.name }}</span
-                  >
+                  <span class="pp-folder-name">{{ folder.name }}</span>
                 }
               </div>
               <span class="pp-folder-count"

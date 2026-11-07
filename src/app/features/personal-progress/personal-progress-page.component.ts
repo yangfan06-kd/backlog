@@ -188,6 +188,7 @@ export class PersonalProgressPageComponent implements OnInit {
   );
   readonly folderCards = viewChildren<ElementRef<HTMLElement>>('folderCard');
   readonly folderDropTargetId = signal<string | null>(null);
+  private _folderDragActive = false;
   readonly visibleRows = computed(() => {
     const activeFolderId = this.activeFolderId();
     const assignments = this.folderAssignments();
@@ -983,6 +984,7 @@ export class PersonalProgressPageComponent implements OnInit {
 
   startFolderDrag(folderId: string, event: DragEvent): void {
     if (!event.dataTransfer) return;
+    this._folderDragActive = true;
     event.dataTransfer.setData('application/x-project1-folder', folderId);
     event.dataTransfer.effectAllowed = 'move';
   }
@@ -1002,8 +1004,15 @@ export class PersonalProgressPageComponent implements OnInit {
     this._folders.move(folderId, targetId);
   }
 
+  openFolderFromCard(folderId: string): void {
+    if (this._folderDragActive) return;
+    this.openFolder(folderId);
+  }
+
   endFolderDrag(): void {
-    // Native drag completion is handled by the drop target.
+    setTimeout(() => {
+      this._folderDragActive = false;
+    });
   }
 
   dropProjectIntoFolder(

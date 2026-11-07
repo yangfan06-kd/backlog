@@ -36,7 +36,7 @@ test('reorders folder cards, highlights while dropping, and expands folder actio
   const names = page.locator('.pp-folder-name');
   const cards = page.getByTestId('pp-folder-card');
   await expect(names).toHaveText(['文件夹一', '文件夹二']);
-  await names.first().dragTo(cards.nth(1));
+  await cards.first().dragTo(cards.nth(1));
   await expect(names).toHaveText(['文件夹二', '文件夹一']);
 
   await createProject(page, '拖动测试项目');
