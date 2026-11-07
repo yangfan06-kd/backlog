@@ -88,6 +88,29 @@ test.describe('personal progress minimal offline loop', () => {
     }
   });
 
+  test('filters the project table without changing project data', async ({ page }) => {
+    await gotoProgress(page);
+    await createProject(page, '筛选有步骤');
+    await appendStep(page, '筛选有步骤', '保留步骤');
+    await createProject(page, '筛选无步骤');
+
+    await page.getByTestId('pp-project-filter-toggle').click();
+    await page.getByTestId('pp-project-filter-remaining').click();
+    await expect(
+      page.getByTestId('pp-project-row').filter({ hasText: '筛选有步骤' }),
+    ).toBeVisible();
+    await expect(
+      page.getByTestId('pp-project-row').filter({ hasText: '筛选无步骤' }),
+    ).toHaveCount(0);
+    await expect(page.getByTestId('pp-project-filter-toggle')).toContainText('1');
+
+    await page.getByTestId('pp-project-filter-all').click();
+    await expect(
+      page.getByTestId('pp-project-row').filter({ hasText: '筛选无步骤' }),
+    ).toBeVisible();
+    await expect(page.getByTestId('pp-project-filter-toggle')).not.toContainText('1');
+  });
+
   test('a project with only today has one date and no expand control', async ({
     page,
   }) => {
