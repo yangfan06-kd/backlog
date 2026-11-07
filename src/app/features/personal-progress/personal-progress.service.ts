@@ -151,8 +151,11 @@ export class PersonalProgressService {
     title: string,
     kind: PersonalOwnerKind = 'project',
     plannedDay: string | null = null,
+    quadrant: PersonalProjectQuadrant | null = null,
   ): Promise<PersonalCommandResult<{ projectId: string }>> {
-    return this._enqueue(() => this._createProject(operationId, title, kind, plannedDay));
+    return this._enqueue(() =>
+      this._createProject(operationId, title, kind, plannedDay, quadrant),
+    );
   }
 
   insertStepAfter(
@@ -266,12 +269,14 @@ export class PersonalProgressService {
     title: string,
     kind: PersonalOwnerKind,
     plannedDay: string | null,
+    quadrant: PersonalProjectQuadrant | null,
   ): Promise<PersonalCommandResult<{ projectId: string }>> {
     const clean = normalizeBody(title);
     if (
       !clean ||
       !isPersonalOwnerKind(kind) ||
-      (plannedDay !== null && (kind !== 'project' || !isPersonalRecordDay(plannedDay)))
+      (plannedDay !== null && (kind !== 'project' || !isPersonalRecordDay(plannedDay))) ||
+      (quadrant !== null && (kind !== 'project' || !isPersonalProjectQuadrant(quadrant)))
     ) {
       return rejectedResult(operationId, 'INVALID_INPUT');
     }
@@ -289,6 +294,7 @@ export class PersonalProgressService {
       kind,
       plannedDay,
       Date.now(),
+      quadrant,
     );
     try {
       await this._dispatchWithReceipt(addProject({ project }), operationId);
