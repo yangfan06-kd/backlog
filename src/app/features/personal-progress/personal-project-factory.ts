@@ -3,6 +3,7 @@ import { Project } from '../project/project.model';
 import {
   PERSONAL_PROGRESS_SCHEMA_VERSION,
   PersonalOwnerKind,
+  PersonalProjectQuadrant,
 } from './personal-progress.model';
 
 /** Called after command validation; no clocks or persistence inside the factory. */
@@ -12,6 +13,7 @@ export const createPersonalProject = (
   kind: PersonalOwnerKind,
   plannedDay: string | null,
   now: number,
+  quadrant: PersonalProjectQuadrant | null = null,
 ): Project => ({
   ...DEFAULT_PROJECT,
   id: `pp-project-${operationId}`,
@@ -28,11 +30,14 @@ export const createPersonalProject = (
           kind: 'routine',
           createdAt: now,
         }
-      : plannedDay
-        ? {
-            schemaVersion: PERSONAL_PROGRESS_SCHEMA_VERSION,
-            entries: [],
-            planning: { day: plannedDay, revision: 1, operationId },
-          }
-        : undefined,
+      : {
+          schemaVersion: PERSONAL_PROGRESS_SCHEMA_VERSION,
+          entries: [],
+          ...(plannedDay
+            ? { planning: { day: plannedDay, revision: 1, operationId } }
+            : {}),
+          ...(quadrant
+            ? { quadrant: { value: quadrant, revision: 1, operationId } }
+            : {}),
+        },
 });
