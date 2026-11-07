@@ -105,6 +105,12 @@ test.describe('personal search page', () => {
     await expect(page.getByTestId('personal-search-empty')).toBeVisible();
     await page.getByTestId('personal-search-status-filter').selectOption('active');
     await expect(result).toBeVisible();
+    await page.locator('.search-filter').filter({ hasText: '记录' }).click();
+    await expect(page.getByTestId('personal-search-date-filter')).toBeVisible();
+    await page.getByTestId('personal-search-date-filter').selectOption('today');
+    await expect(page.getByTestId('personal-search-empty')).toBeVisible();
+    await page.locator('.search-filter').filter({ hasText: '全部' }).click();
+    await expect(result).toBeVisible();
 
     await result.click();
     await expect(page.getByTestId('pp-page')).toBeVisible();
