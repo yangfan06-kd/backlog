@@ -219,6 +219,9 @@ export class PersonalProgressPageComponent implements OnInit {
       return `var(--pp-project-width) repeat(${dateCount}, minmax(0, 1fr))`;
     }
     const dateCount = visibleHistoryCount + 1;
+    if (dateCount === 1) {
+      return `var(--pp-project-width) minmax(var(--pp-day-min-width, 96px), 1fr) minmax(var(--pp-steps-width), 1fr)`;
+    }
     return `var(--pp-project-width) repeat(${dateCount}, minmax(var(--pp-day-min-width, 96px), 1fr)) var(--pp-steps-width)`;
   });
   readonly recordExpanded = signal(false);
