@@ -198,9 +198,17 @@ export class PersonalProgressPageComponent implements OnInit {
         : !assignments[row.project.id],
     );
   });
-  readonly historyDates = computed(() =>
-    this.view().dates.filter((day) => day !== this.view().today),
-  );
+  readonly historyDates = computed(() => {
+    const today = this.view().today;
+    const dates = new Set<string>();
+    for (const row of this.visibleRows()) {
+      if (!row.isExpanded) continue;
+      for (const day of row.entriesByDay.keys()) {
+        if (day !== today) dates.add(day);
+      }
+    }
+    return [...dates].sort();
+  });
   readonly displayHistoryDates = computed(() =>
     this.recordExpanded() ? this.historyDates() : this.historyDates().slice(0, 1),
   );

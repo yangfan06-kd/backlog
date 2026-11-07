@@ -444,14 +444,13 @@
                     [attr.aria-label]="dayAria(view().today)"
                     >{{ dayLabel(view().today) }}</span
                   >
-                  @if (!recordExpanded()) {
+                  @if (!recordExpanded() && canExpandRecords()) {
                     <button
                       type="button"
                       class="pp-day-expand"
                       data-testid="pp-expand-records"
                       title="展开"
                       aria-label="展开所有日期记录"
-                      [disabled]="!canExpandRecords()"
                       (click)="toggleRecordExpanded($event)"
                     >
                       &gt;&gt;&gt;

@@ -2,7 +2,7 @@
 
 一个面向 Windows 的本机优先个人项目管理工具，用来整理项目、推进步骤、记录每天实际发生的事，并用四象限总览查看全局。
 
-当前公开试用版：**0.1.0-beta.55（Windows x64）**。
+当前公开试用版：**0.1.0-beta.56（Windows x64）**。
 
 > 这是试用版，安装包未签名。升级或重装前，请先导出完整备份并关闭应用。
 
@@ -19,6 +19,7 @@
 
 - **四象限总览**：按紧急、重要程度整理项目，快速看到各象限中的项目和剩余步骤。
 - **项目进展**：项目下按顺序维护步骤，完成后生成当天的实际完成记录。
+- **按项目显示日期**：只显示当前可见项目实际有记录的历史日期；只有今天记录时不显示历史列和展开按钮。
 - **搜索页**：独立搜索入口，可按项目、常态事项、步骤、记录和备忘筛选并打开结果。
 - **快记**：从侧栏快速记录项目进展、常态事项或备忘，不需要先进入对应页面。
 - **复盘**：按本周或本月查看完成、有推进和需要回看的项目与记录。
@@ -58,8 +59,8 @@
 npm ci
 npm run buildFrontend:prod:es6
 npm run electron:build
-node tools/project1/build-public.cjs 0.1.0-beta.55
-node tools/project1/prepare-delivery.cjs 0.1.0-beta.55
+node tools/project1/build-public.cjs 0.1.0-beta.56
+node tools/project1/prepare-delivery.cjs 0.1.0-beta.56
 ```
 
 构建产物、安装包和用户数据不会提交到源码仓库。

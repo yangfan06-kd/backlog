@@ -88,6 +88,23 @@ test.describe('personal progress minimal offline loop', () => {
     }
   });
 
+  test('a project with only today has one date and no expand control', async ({
+    page,
+  }) => {
+    await gotoProgress(page);
+    await createProject(page, '仅今天项目');
+    if (!(await page.getByTestId('pp-entry-input').isVisible())) {
+      await page.getByTestId('pp-backfill').click();
+    }
+    await page.getByTestId('pp-entry-input').fill('今天才有记录');
+    await page.getByTestId('pp-add-entry').click();
+    await expect(status(page)).toHaveAttribute('data-save-state', 'saved');
+
+    await expect(page.getByTestId('pp-date')).toHaveCount(1);
+    await expect(page.locator('.pp-day-col.is-today .pp-day')).toBeVisible();
+    await expect(page.getByTestId('pp-expand-records')).toHaveCount(0);
+  });
+
   test('collapsing projects removes only their historical dates and keeps today', async ({
     page,
   }) => {
