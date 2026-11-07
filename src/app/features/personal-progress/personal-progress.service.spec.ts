@@ -1415,6 +1415,22 @@ describe('PersonalProgressService', () => {
     if (conflict.status === 'rejected') expect(conflict.code).toBe('TYPE_CONFLICT');
   });
 
+  it('creates a project with an initial quadrant', async () => {
+    setup([], []);
+    const result = await service.createProject(
+      'quadrant-create',
+      'Quadrant A',
+      'project',
+      null,
+      'urgent-important',
+    );
+    expect(result.status).toBe('persisted');
+    const project = store.state.project.entities['pp-project-quadrant-create']!;
+    const personal = project.personalProgress as PersonalProgressOnProject;
+    expect(personal.quadrant?.value).toBe('urgent-important');
+    expect(personal.quadrant?.revision).toBe(1);
+  });
+
   it('adds and edits routine entries with owner-kind and revision checks', async () => {
     const routine = makeRoutineProject('R', 'Routine');
     const normal = makeProject('P', 'Normal', []);
