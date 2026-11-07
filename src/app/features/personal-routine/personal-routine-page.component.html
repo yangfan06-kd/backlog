@@ -91,6 +91,8 @@
         type="button"
         class="pr-primary"
         data-testid="pr-create-item"
+        #createOrigin="cdkOverlayOrigin"
+        cdkOverlayOrigin
         [disabled]="isSaving() || !newItemTitle().trim() || entryDraftDirty()"
         (click)="createItem()"
       >
