@@ -14,6 +14,8 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { selectAllProjects } from '../project/store/project.selectors';
 import { selectAllTasks } from '../tasks/store/task.selectors';
 import { PersonalMemoService } from '../personal-memo/personal-memo.service';
+import { PersonalProgressService } from '../personal-progress/personal-progress.service';
+import { PersonalFolderService } from '../personal-progress/personal-folder.service';
 import {
   PersonalSearchKind,
   PersonalSearchResult,
@@ -21,6 +23,9 @@ import {
 } from './personal-search.view';
 
 type SearchFilter = 'all' | PersonalSearchKind;
+type SearchDateFilter = 'all' | 'today' | 'week' | 'month';
+type SearchStatusFilter = 'all' | 'active' | 'archived';
+const RECENT_SEARCH_KEY = 'project1.search.recent.v1';
 interface SearchGroup {
   kind: PersonalSearchKind;
   label: string;
@@ -126,7 +131,143 @@ const QUICK_ROUTES = [
         }
       </div>
 
+      <div class="search-options">
+        <button
+          type="button"
+          class="search-options-toggle"
+          data-testid="personal-search-filters-toggle"
+          [class.is-active]="hasActiveFilters()"
+          [attr.aria-expanded]="showFilters()"
+          (click)="showFilters.set(!showFilters())"
+        >
+          筛选
+          @if (activeFilterCount() > 0) {
+            <span class="filter-count">{{ activeFilterCount() }}</span>
+          }
+          <span aria-hidden="true">{{ showFilters() ? '⌃' : '⌄' }}</span>
+        </button>
+        @if (showFilters()) {
+          <div class="search-advanced">
+            <label>
+              日期
+              <select
+                data-testid="personal-search-date-filter"
+                (change)="onDateFilterChange($event)"
+              >
+                <option
+                  value="all"
+                  [selected]="dateFilter() === 'all'"
+                >
+                  全部
+                </option>
+                <option
+                  value="today"
+                  [selected]="dateFilter() === 'today'"
+                >
+                  今天
+                </option>
+                <option
+                  value="week"
+                  [selected]="dateFilter() === 'week'"
+                >
+                  本周
+                </option>
+                <option
+                  value="month"
+                  [selected]="dateFilter() === 'month'"
+                >
+                  本月
+                </option>
+              </select>
+            </label>
+            <label>
+              文件夹
+              <select
+                data-testid="personal-search-folder-filter"
+                (change)="onFolderFilterChange($event)"
+              >
+                <option
+                  value="all"
+                  [selected]="folderFilter() === 'all'"
+                >
+                  全部
+                </option>
+                @for (folder of folders(); track folder.id) {
+                  <option
+                    [value]="folder.id"
+                    [selected]="folderFilter() === folder.id"
+                  >
+                    {{ folder.name }}
+                  </option>
+                }
+              </select>
+            </label>
+            <label>
+              状态
+              <select
+                data-testid="personal-search-status-filter"
+                (change)="onStatusFilterChange($event)"
+              >
+                <option
+                  value="all"
+                  [selected]="statusFilter() === 'all'"
+                >
+                  全部
+                </option>
+                <option
+                  value="active"
+                  [selected]="statusFilter() === 'active'"
+                >
+                  进行中
+                </option>
+                <option
+                  value="archived"
+                  [selected]="statusFilter() === 'archived'"
+                >
+                  已归档
+                </option>
+              </select>
+            </label>
+            @if (hasActiveFilters()) {
+              <button
+                type="button"
+                class="search-filters-reset"
+                (click)="resetAdvancedFilters()"
+              >
+                清空筛选
+              </button>
+            }
+          </div>
+        }
+      </div>
+
       @if (!query().trim()) {
+        @if (recentSearches().length) {
+          <section
+            class="recent-searches"
+            aria-label="最近搜索"
+          >
+            <p class="search-section-label">最近搜索</p>
+            <div class="recent-list">
+              @for (recent of recentSearches(); track recent) {
+                <button
+                  type="button"
+                  class="recent-chip"
+                  (click)="useRecentSearch(recent)"
+                >
+                  {{ recent }}
+                </button>
+              }
+              <button
+                type="button"
+                class="recent-clear"
+                (click)="clearRecentSearches()"
+              >
+                清空
+              </button>
+            </div>
+          </section>
+        }
         <section
           class="search-empty"
           aria-label="常用入口"
@@ -398,6 +539,121 @@ const QUICK_ROUTES = [
         background: var(--card-bg);
         color: var(--text-color);
         box-shadow: inset 0 0 0 1px var(--separator-color);
+      }
+
+      .search-options {
+        margin-bottom: var(--s2);
+      }
+
+      .search-options-toggle {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        min-height: 26px;
+        padding: 0 var(--s-half);
+        border: 0;
+        border-radius: 5px;
+        background: transparent;
+        color: var(--text-color-muted);
+        font: inherit;
+        font-size: var(--font-size-xs);
+        cursor: pointer;
+      }
+
+      .search-options-toggle:hover,
+      .search-options-toggle.is-active {
+        color: var(--text-color);
+      }
+
+      .filter-count {
+        display: inline-grid;
+        min-width: 16px;
+        height: 16px;
+        place-items: center;
+        border-radius: 8px;
+        background: var(--c-primary);
+        color: var(--bg);
+        font-size: 10px;
+      }
+
+      .search-advanced {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--s);
+        margin-top: var(--s-half);
+        padding: var(--s) var(--s2);
+        border: 1px solid var(--separator-color);
+        border-radius: 6px;
+        background: var(--card-bg);
+      }
+
+      .search-advanced label {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        color: var(--text-color-muted);
+        font-size: var(--font-size-xs);
+      }
+
+      .search-advanced select {
+        min-height: 28px;
+        padding: 0 var(--s-half);
+        border: 1px solid var(--separator-color);
+        border-radius: 5px;
+        background: var(--bg);
+        color: var(--text-color);
+        font: inherit;
+        font-size: var(--font-size-xs);
+      }
+
+      .search-filters-reset,
+      .recent-clear {
+        min-height: 26px;
+        padding: 0 var(--s-half);
+        border: 0;
+        background: transparent;
+        color: var(--text-color-muted);
+        font: inherit;
+        font-size: var(--font-size-xs);
+        cursor: pointer;
+      }
+
+      .search-filters-reset:hover,
+      .recent-clear:hover {
+        color: var(--text-color);
+      }
+
+      .recent-searches {
+        padding-top: var(--s);
+        border-top: 1px solid var(--separator-color);
+      }
+
+      .recent-list {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .recent-chip {
+        max-width: 220px;
+        overflow: hidden;
+        min-height: 28px;
+        padding: 0 var(--s);
+        border: 1px solid var(--separator-color);
+        border-radius: 14px;
+        background: var(--card-bg);
+        color: var(--text-color-muted);
+        font: inherit;
+        font-size: var(--font-size-xs);
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        cursor: pointer;
+      }
+
+      .recent-chip:hover {
+        color: var(--text-color);
       }
 
       .search-empty {
@@ -676,6 +932,8 @@ export class PersonalSearchPageComponent implements AfterViewInit {
   private readonly _store = inject(Store);
   private readonly _router = inject(Router);
   private readonly _memo = inject(PersonalMemoService);
+  private readonly _progress = inject(PersonalProgressService);
+  private readonly _folders = inject(PersonalFolderService);
   private readonly _input = viewChild<ElementRef<HTMLInputElement>>('searchInput');
   private readonly _projects = toSignal(this._store.select(selectAllProjects), {
     initialValue: [],
@@ -687,8 +945,14 @@ export class PersonalSearchPageComponent implements AfterViewInit {
 
   readonly filters = FILTERS;
   readonly quickRoutes = QUICK_ROUTES;
+  readonly folders = this._folders.folders;
   readonly query = signal('');
   readonly filter = signal<SearchFilter>('all');
+  readonly showFilters = signal(false);
+  readonly dateFilter = signal<SearchDateFilter>('all');
+  readonly folderFilter = signal('all');
+  readonly statusFilter = signal<SearchStatusFilter>('all');
+  readonly recentSearches = signal<string[]>(this._loadRecentSearches());
   readonly activeResultId = signal<string | null>(null);
   private readonly _collapsedGroups = signal<ReadonlySet<PersonalSearchKind>>(new Set());
   private readonly _expandedRecords = signal<ReadonlySet<string>>(new Set());
@@ -699,11 +963,43 @@ export class PersonalSearchPageComponent implements AfterViewInit {
       this._tasks(),
       this._notes(),
       this.query(),
+      100,
     ),
   );
+  readonly filteredResults = computed(() => {
+    const status = this.statusFilter();
+    const folderId = this.folderFilter();
+    const dateFilter = this.dateFilter();
+    const assignments = this._folders.assignments();
+    const range = this._dateRange(dateFilter);
+    return this.allResults().filter((item) => {
+      if (status === 'archived' && !item.archived) return false;
+      if (status === 'active' && item.archived) return false;
+      if (
+        folderId !== 'all' &&
+        (!item.projectId || assignments[item.projectId] !== folderId)
+      ) {
+        return false;
+      }
+      if (dateFilter !== 'all') {
+        if (item.kind !== 'record' || !item.day || !range) return false;
+        if (item.day < range.start || item.day > range.end) return false;
+      }
+      return true;
+    });
+  });
+  readonly activeFilterCount = computed(
+    () =>
+      [
+        this.dateFilter() !== 'all',
+        this.folderFilter() !== 'all',
+        this.statusFilter() !== 'all',
+      ].filter(Boolean).length,
+  );
+  readonly hasActiveFilters = computed(() => this.activeFilterCount() > 0);
   readonly groups = computed<SearchGroup[]>(() => {
     const kind = this.filter();
-    const items = this.allResults();
+    const items = this.filteredResults();
     const filtered = kind === 'all' ? items : items.filter((item) => item.kind === kind);
     return GROUP_ORDER.flatMap((groupKind) => {
       const groupItems = filtered.filter((item) => item.kind === groupKind);
@@ -722,6 +1018,92 @@ export class PersonalSearchPageComponent implements AfterViewInit {
     this.activeResultId.set(null);
   }
 
+  onDateFilterChange(event: Event): void {
+    const value = (event.target as HTMLSelectElement).value as SearchDateFilter;
+    this.dateFilter.set(value);
+    this.activeResultId.set(null);
+  }
+
+  onFolderFilterChange(event: Event): void {
+    this.folderFilter.set((event.target as HTMLSelectElement).value);
+    this.activeResultId.set(null);
+  }
+
+  onStatusFilterChange(event: Event): void {
+    const value = (event.target as HTMLSelectElement).value as SearchStatusFilter;
+    this.statusFilter.set(value);
+    this.activeResultId.set(null);
+  }
+
+  resetAdvancedFilters(): void {
+    this.dateFilter.set('all');
+    this.folderFilter.set('all');
+    this.statusFilter.set('all');
+    this.activeResultId.set(null);
+  }
+
+  useRecentSearch(query: string): void {
+    this.query.set(query);
+    this.activeResultId.set(null);
+    this._input()?.nativeElement.focus();
+  }
+
+  clearRecentSearches(): void {
+    this.recentSearches.set([]);
+    try {
+      localStorage.removeItem(RECENT_SEARCH_KEY);
+    } catch {
+      // Recent searches are optional.
+    }
+  }
+
+  private _dateRange(filter: SearchDateFilter): { start: string; end: string } | null {
+    if (filter === 'all') return null;
+    const today = this._progress.todayStr();
+    if (filter === 'today') return { start: today, end: today };
+    const [year, month, date] = today.split('-').map(Number);
+    if (filter === 'week') {
+      const current = new Date(year, month - 1, date);
+      const offset = (current.getDay() + 6) % 7;
+      current.setDate(current.getDate() - offset);
+      return { start: this._day(current), end: today };
+    }
+    return { start: `${year}-${String(month).padStart(2, '0')}-01`, end: today };
+  }
+
+  private _day(date: Date): string {
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+  }
+
+  private _loadRecentSearches(): string[] {
+    try {
+      const parsed = JSON.parse(
+        localStorage.getItem(RECENT_SEARCH_KEY) ?? '[]',
+      ) as unknown;
+      if (!Array.isArray(parsed)) return [];
+      return parsed
+        .filter((item): item is string => typeof item === 'string')
+        .slice(0, 6);
+    } catch {
+      return [];
+    }
+  }
+
+  private _rememberSearch(): void {
+    const query = this.query().trim();
+    if (!query) return;
+    const next = [query, ...this.recentSearches().filter((item) => item !== query)].slice(
+      0,
+      6,
+    );
+    this.recentSearches.set(next);
+    try {
+      localStorage.setItem(RECENT_SEARCH_KEY, JSON.stringify(next));
+    } catch {
+      // Search still works if storage is unavailable.
+    }
+  }
+
   onKeydown(event: KeyboardEvent): void {
     if (event.key === 'Escape') {
       event.preventDefault();
@@ -730,7 +1112,7 @@ export class PersonalSearchPageComponent implements AfterViewInit {
     }
     if (event.key === 'Enter') {
       const active = this.activeResultId();
-      const result = this.allResults().find((item) => item.id === active);
+      const result = this.filteredResults().find((item) => item.id === active);
       if (result) {
         event.preventDefault();
         this.openResult(result);
@@ -738,7 +1120,7 @@ export class PersonalSearchPageComponent implements AfterViewInit {
       return;
     }
     if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return;
-    const results = this.allResults();
+    const results = this.filteredResults();
     if (!results.length) return;
     event.preventDefault();
     const index = results.findIndex((item) => item.id === this.activeResultId());
@@ -784,6 +1166,7 @@ export class PersonalSearchPageComponent implements AfterViewInit {
   }
 
   openResult(item: PersonalSearchResult): void {
+    this._rememberSearch();
     if (item.kind === 'record') {
       this.toggleRecord(item.id);
       return;
@@ -792,6 +1175,7 @@ export class PersonalSearchPageComponent implements AfterViewInit {
   }
 
   openResultTarget(item: PersonalSearchResult): void {
+    this._rememberSearch();
     void this._router.navigate([item.route], { queryParams: item.queryParams });
   }
 
