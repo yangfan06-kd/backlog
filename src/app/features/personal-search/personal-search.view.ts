@@ -17,6 +17,9 @@ export interface PersonalSearchResult {
   route: string;
   queryParams?: Record<string, string>;
   score: number;
+  projectId?: string;
+  day?: string;
+  archived?: boolean;
 }
 
 const normalize = (value: string): string => value.trim().toLocaleLowerCase();
@@ -59,19 +62,34 @@ export const buildPersonalSearchResults = (
   const results: PersonalSearchResult[] = [];
 
   for (const project of projects) {
-    if (project.isArchived) continue;
+    if (project.personalProgress?.trash?.deletedAt) continue;
     const kind = personalProjectKind(project);
     const score = scoreText(project.title, query);
     if (score > 0) {
+      const archived = project.isArchived;
       results.push(
         result(
           {
             id: `project:${project.id}`,
             kind: kind === 'routine' ? 'routine' : 'project',
             title: project.title,
-            subtitle: kind === 'routine' ? '常态事项' : '项目',
-            route: kind === 'routine' ? '/personal-routine' : '/personal-progress',
-            ...(kind === 'project' ? { queryParams: { projectId: project.id } } : {}),
+            subtitle: archived
+              ? kind === 'routine'
+                ? '已归档 · 常态事项'
+                : '已归档 · 项目'
+              : kind === 'routine'
+                ? '常态事项'
+                : '项目',
+            route: archived
+              ? '/personal-archive'
+              : kind === 'routine'
+                ? '/personal-routine'
+                : '/personal-progress',
+            ...(!archived && kind === 'project'
+              ? { queryParams: { projectId: project.id } }
+              : {}),
+            projectId: project.id,
+            archived,
           },
           score,
         ),
@@ -94,6 +112,7 @@ export const buildPersonalSearchResults = (
             subtitle: projectTitle,
             route: '/personal-progress',
             queryParams: { projectId: task.projectId },
+            projectId: task.projectId,
           },
           score,
         ),
@@ -114,6 +133,8 @@ export const buildPersonalSearchResults = (
               subtitle: `${project.title} · 记录`,
               route: '/personal-progress',
               queryParams: { projectId: project.id },
+              projectId: project.id,
+              day: entry.recordDay,
             },
             score,
           ),
@@ -138,6 +159,8 @@ export const buildPersonalSearchResults = (
               subtitle: `${projectTitle} · 记录`,
               route: '/personal-progress',
               queryParams: { projectId: task.projectId },
+              projectId: task.projectId,
+              day: entry.recordDay,
             },
             score,
           ),
