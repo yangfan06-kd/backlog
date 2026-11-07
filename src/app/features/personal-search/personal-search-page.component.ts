@@ -131,115 +131,123 @@ const QUICK_ROUTES = [
         }
       </div>
 
-      <div class="search-options">
-        <button
-          type="button"
-          class="search-options-toggle"
-          data-testid="personal-search-filters-toggle"
-          [class.is-active]="hasActiveFilters()"
-          [attr.aria-expanded]="showFilters()"
-          (click)="showFilters.set(!showFilters())"
-        >
-          筛选
-          @if (activeFilterCount() > 0) {
-            <span class="filter-count">{{ activeFilterCount() }}</span>
-          }
-          <span aria-hidden="true">{{ showFilters() ? '⌃' : '⌄' }}</span>
-        </button>
-        @if (showFilters()) {
-          <div class="search-advanced">
-            <label>
-              日期
-              <select
-                data-testid="personal-search-date-filter"
-                (change)="onDateFilterChange($event)"
-              >
-                <option
-                  value="all"
-                  [selected]="dateFilter() === 'all'"
-                >
-                  全部
-                </option>
-                <option
-                  value="today"
-                  [selected]="dateFilter() === 'today'"
-                >
-                  今天
-                </option>
-                <option
-                  value="week"
-                  [selected]="dateFilter() === 'week'"
-                >
-                  本周
-                </option>
-                <option
-                  value="month"
-                  [selected]="dateFilter() === 'month'"
-                >
-                  本月
-                </option>
-              </select>
-            </label>
-            <label>
-              文件夹
-              <select
-                data-testid="personal-search-folder-filter"
-                (change)="onFolderFilterChange($event)"
-              >
-                <option
-                  value="all"
-                  [selected]="folderFilter() === 'all'"
-                >
-                  全部
-                </option>
-                @for (folder of folders(); track folder.id) {
-                  <option
-                    [value]="folder.id"
-                    [selected]="folderFilter() === folder.id"
-                  >
-                    {{ folder.name }}
-                  </option>
-                }
-              </select>
-            </label>
-            <label>
-              状态
-              <select
-                data-testid="personal-search-status-filter"
-                (change)="onStatusFilterChange($event)"
-              >
-                <option
-                  value="all"
-                  [selected]="statusFilter() === 'all'"
-                >
-                  全部
-                </option>
-                <option
-                  value="active"
-                  [selected]="statusFilter() === 'active'"
-                >
-                  进行中
-                </option>
-                <option
-                  value="archived"
-                  [selected]="statusFilter() === 'archived'"
-                >
-                  已归档
-                </option>
-              </select>
-            </label>
-            @if (hasActiveFilters()) {
-              <button
-                type="button"
-                class="search-filters-reset"
-                (click)="resetAdvancedFilters()"
-              >
-                清空筛选
-              </button>
+      @if (hasAdvancedFilterOptions()) {
+        <div class="search-options">
+          <button
+            type="button"
+            class="search-options-toggle"
+            data-testid="personal-search-filters-toggle"
+            [class.is-active]="hasActiveFilters()"
+            [attr.aria-expanded]="showFilters()"
+            (click)="showFilters.set(!showFilters())"
+          >
+            筛选
+            @if (activeFilterCount() > 0) {
+              <span class="filter-count">{{ activeFilterCount() }}</span>
             }
-          </div>
-        }
-      </div>
+            <span aria-hidden="true">{{ showFilters() ? '⌃' : '⌄' }}</span>
+          </button>
+          @if (showFilters()) {
+            <div class="search-advanced">
+              @if (showsDateFilter()) {
+                <label>
+                  记录日期
+                  <select
+                    data-testid="personal-search-date-filter"
+                    (change)="onDateFilterChange($event)"
+                  >
+                    <option
+                      value="all"
+                      [selected]="dateFilter() === 'all'"
+                    >
+                      全部
+                    </option>
+                    <option
+                      value="today"
+                      [selected]="dateFilter() === 'today'"
+                    >
+                      今天
+                    </option>
+                    <option
+                      value="week"
+                      [selected]="dateFilter() === 'week'"
+                    >
+                      本周
+                    </option>
+                    <option
+                      value="month"
+                      [selected]="dateFilter() === 'month'"
+                    >
+                      本月
+                    </option>
+                  </select>
+                </label>
+              }
+              @if (showsFolderFilter()) {
+                <label>
+                  文件夹
+                  <select
+                    data-testid="personal-search-folder-filter"
+                    (change)="onFolderFilterChange($event)"
+                  >
+                    <option
+                      value="all"
+                      [selected]="folderFilter() === 'all'"
+                    >
+                      全部
+                    </option>
+                    @for (folder of folders(); track folder.id) {
+                      <option
+                        [value]="folder.id"
+                        [selected]="folderFilter() === folder.id"
+                      >
+                        {{ folder.name }}
+                      </option>
+                    }
+                  </select>
+                </label>
+              }
+              @if (showsStatusFilter()) {
+                <label>
+                  状态
+                  <select
+                    data-testid="personal-search-status-filter"
+                    (change)="onStatusFilterChange($event)"
+                  >
+                    <option
+                      value="all"
+                      [selected]="statusFilter() === 'all'"
+                    >
+                      全部
+                    </option>
+                    <option
+                      value="active"
+                      [selected]="statusFilter() === 'active'"
+                    >
+                      进行中
+                    </option>
+                    <option
+                      value="archived"
+                      [selected]="statusFilter() === 'archived'"
+                    >
+                      已归档
+                    </option>
+                  </select>
+                </label>
+              }
+              @if (hasActiveFilters()) {
+                <button
+                  type="button"
+                  class="search-filters-reset"
+                  (click)="resetAdvancedFilters()"
+                >
+                  清空筛选
+                </button>
+              }
+            </div>
+          }
+        </div>
+      }
 
       @if (!query().trim()) {
         @if (recentSearches().length) {
@@ -981,8 +989,8 @@ export class PersonalSearchPageComponent implements AfterViewInit {
       ) {
         return false;
       }
-      if (dateFilter !== 'all') {
-        if (item.kind !== 'record' || !item.day || !range) return false;
+      if (dateFilter !== 'all' && item.kind === 'record') {
+        if (!item.day || !range) return false;
         if (item.day < range.start || item.day > range.end) return false;
       }
       return true;
@@ -997,6 +1005,23 @@ export class PersonalSearchPageComponent implements AfterViewInit {
       ].filter(Boolean).length,
   );
   readonly hasActiveFilters = computed(() => this.activeFilterCount() > 0);
+  readonly showsDateFilter = computed(() => this.filter() === 'record');
+  readonly showsFolderFilter = computed(
+    () =>
+      this.filter() === 'all' ||
+      this.filter() === 'project' ||
+      this.filter() === 'step' ||
+      this.filter() === 'record',
+  );
+  readonly showsStatusFilter = computed(
+    () =>
+      this.filter() === 'all' ||
+      this.filter() === 'project' ||
+      this.filter() === 'routine',
+  );
+  readonly hasAdvancedFilterOptions = computed(
+    () => this.showsDateFilter() || this.showsFolderFilter() || this.showsStatusFilter(),
+  );
   readonly groups = computed<SearchGroup[]>(() => {
     const kind = this.filter();
     const items = this.filteredResults();
@@ -1140,6 +1165,11 @@ export class PersonalSearchPageComponent implements AfterViewInit {
 
   changeFilter(filter: SearchFilter): void {
     this.filter.set(filter);
+    if (filter !== 'record') this.dateFilter.set('all');
+    if (filter === 'routine' || filter === 'memo') this.folderFilter.set('all');
+    if (filter === 'step' || filter === 'record' || filter === 'memo') {
+      this.statusFilter.set('all');
+    }
     this.activeResultId.set(null);
   }
 
