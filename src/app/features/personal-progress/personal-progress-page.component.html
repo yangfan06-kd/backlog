@@ -300,14 +300,100 @@
     </section>
   }
 
-  @if (selectedRow(); as selected) {
-    <div class="pp-current-project">
-      当前项目 <strong>{{ selected.project.title }}</strong>
+  <div class="pp-board-head">
+    @if (selectedRow(); as selected) {
+      <div class="pp-current-project">
+        当前项目 <strong>{{ selected.project.title }}</strong>
+      </div>
+    } @else {
+      <div></div>
+    }
+    @if (!activeFolderId()) {
+      <button
+        type="button"
+        class="pp-project-filter-toggle"
+        data-testid="pp-project-filter-toggle"
+        [class.is-active]="hasProjectFilters()"
+        [attr.aria-expanded]="projectFiltersOpen()"
+        (click)="toggleProjectFilters()"
+      >
+        筛选
+        @if (projectFilterCount() > 0) {
+          <span class="pp-filter-count">{{ projectFilterCount() }}</span>
+        }
+        <span aria-hidden="true">{{ projectFiltersOpen() ? '⌃' : '⌄' }}</span>
+      </button>
+    }
+  </div>
+
+  @if (!activeFolderId() && projectFiltersOpen()) {
+    <div class="pp-project-filter-panel">
+      <div class="pp-project-filter-chips">
+        @for (option of projectFilterOptions; track option.id) {
+          <button
+            type="button"
+            class="pp-project-filter-chip"
+            [class.is-active]="projectQuickFilter() === option.id"
+            [attr.data-testid]="'pp-project-filter-' + option.id"
+            (click)="setProjectQuickFilter(option.id)"
+          >
+            {{ option.label }}
+          </button>
+        }
+      </div>
+      <label class="pp-project-filter-quadrant">
+        四象限
+        <select
+          data-testid="pp-project-filter-quadrant"
+          (change)="onProjectQuadrantFilter($event)"
+        >
+          <option
+            value="all"
+            [selected]="projectQuadrantFilter() === 'all'"
+          >
+            全部
+          </option>
+          @for (option of quadrantFilterOptions; track option.id) {
+            <option
+              [value]="option.id"
+              [selected]="projectQuadrantFilter() === option.id"
+            >
+              {{ option.labelKey | translate }}
+            </option>
+          }
+        </select>
+      </label>
+      @if (hasProjectFilters()) {
+        <button
+          type="button"
+          class="pp-project-filter-reset"
+          data-testid="pp-project-filter-reset"
+          (click)="resetProjectFilters()"
+        >
+          清空
+        </button>
+      }
+      @if (hasProjectFilters()) {
+        <span class="pp-project-filter-hint">筛选时暂停拖动排序</span>
+      }
     </div>
   }
 
-  @if (visibleRows().length === 0) {
-    <p class="pp-empty">{{ 'PERSONAL_PROGRESS.EMPTY' | translate }}</p>
+  @if (boardRows().length === 0) {
+    @if (hasProjectFilters()) {
+      <p class="pp-empty">
+        没有符合筛选的项目。
+        <button
+          type="button"
+          class="pp-link"
+          (click)="resetProjectFilters()"
+        >
+          清空筛选
+        </button>
+      </p>
+    } @else {
+      <p class="pp-empty">{{ 'PERSONAL_PROGRESS.EMPTY' | translate }}</p>
+    }
   } @else {
     <div
       class="pp-board-shell"
@@ -466,11 +552,11 @@
           </thead>
           <tbody
             cdkDropList
-            [cdkDropListData]="visibleRows()"
-            [cdkDropListDisabled]="isSaving() || !!activeDraft()"
+            [cdkDropListData]="boardRows()"
+            [cdkDropListDisabled]="isSaving() || !!activeDraft() || hasProjectFilters()"
             (cdkDropListDropped)="dropProjectRows($event)"
           >
-            @for (row of visibleRows(); track row.project.id) {
+            @for (row of boardRows(); track row.project.id) {
               <tr
                 data-testid="pp-project-row"
                 cdkDrag
