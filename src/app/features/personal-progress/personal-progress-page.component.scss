@@ -128,6 +128,73 @@
   margin: 0;
 }
 
+.pp-board-tools {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.pp-batch-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s);
+  margin-bottom: var(--s);
+  padding: var(--s) var(--s2);
+  border: 1px solid var(--separator-color);
+  border-radius: 6px;
+  background: var(--card-bg);
+  color: var(--text-color);
+  font-size: var(--font-size-sm);
+}
+
+.pp-batch-bar select {
+  min-height: 30px;
+  padding: 0 var(--s-half);
+  border: 1px solid var(--separator-color);
+  border-radius: 5px;
+  background: var(--bg);
+  color: var(--text-color);
+  font: inherit;
+  font-size: var(--font-size-sm);
+}
+
+.pp-batch-bar button {
+  min-height: 30px;
+  padding: 0 var(--s);
+  border: 0;
+  border-radius: 5px;
+  background: var(--c-primary);
+  color: var(--project1-primary-label);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+}
+
+.pp-batch-bar button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.pp-batch-bar .pp-batch-archive {
+  border: 1px solid var(--separator-color);
+  background: transparent;
+  color: var(--text-color);
+}
+
+.pp-batch-bar .pp-link {
+  background: transparent;
+  color: var(--text-color-muted);
+}
+
+.pp-batch-checkbox {
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+  margin: 3px 0 0;
+  accent-color: var(--c-primary);
+}
+
 .pp-project-filter-toggle {
   display: inline-flex;
   min-height: 34px;
@@ -1342,6 +1409,10 @@ tbody tr.is-collapsed td {
   margin-top: 0;
 }
 
+.pp-manual-panel.is-blocked {
+  pointer-events: none;
+}
+
 .pp-manual-panel .pp-add-row > personal-rich-text-editor {
   flex-basis: 100%;
 }
@@ -1495,13 +1566,13 @@ input[type='date'] {
 
   .pp-day-col,
   .pp-col-day {
-    width: 150px;
-    min-width: 150px;
+    width: auto;
+    min-width: 0;
   }
 
   .pp-today-col,
   .pp-col-today {
-    width: var(--pp-today-width);
+    width: auto;
     min-width: 0;
   }
 
