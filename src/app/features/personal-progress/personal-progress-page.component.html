@@ -98,7 +98,6 @@
           [(ngModel)]="newProjectQuadrant"
           [disabled]="isSaving()"
         >
-          <option value="unclassified">未分类</option>
           @for (option of quadrantOptions; track option.id) {
             <option [value]="option.id">{{ option.labelKey | translate }}</option>
           }
@@ -323,6 +322,18 @@
       <div></div>
     }
     <div class="pp-board-tools">
+      <button
+        type="button"
+        class="pp-project-filter-toggle"
+        data-testid="pp-batch-toggle"
+        [class.is-active]="selectionMode()"
+        (click)="toggleSelectionMode()"
+      >
+        批量
+        @if (batchSelection().size > 0) {
+          <span class="pp-filter-count">{{ batchSelection().size }}</span>
+        }
+      </button>
       @if (!activeFolderId()) {
         <button
           type="button"
@@ -352,24 +363,10 @@
           <span aria-hidden="true">{{ projectFiltersOpen() ? '⌃' : '⌄' }}</span>
         </button>
       }
-      @if (!activeFolderId()) {
-        <button
-          type="button"
-          class="pp-project-filter-toggle"
-          data-testid="pp-batch-toggle"
-          [class.is-active]="selectionMode()"
-          (click)="toggleSelectionMode()"
-        >
-          批量
-          @if (batchSelection().size > 0) {
-            <span class="pp-filter-count">{{ batchSelection().size }}</span>
-          }
-        </button>
-      }
     </div>
   </div>
 
-  @if (!activeFolderId() && selectionMode()) {
+  @if (selectionMode()) {
     <div class="pp-batch-bar">
       <span>已选 {{ batchSelection().size }} 个项目</span>
       <select
@@ -399,26 +396,36 @@
       >
         归档
       </button>
-      <select
-        data-testid="pp-batch-quadrant"
-        aria-label="批量设置四象限"
-        (change)="onBatchQuadrantChange($event)"
-      >
-        <option value="">四象限…</option>
-        <option value="unclassified">未分类</option>
-        @for (option of quadrantOptions; track option.id) {
-          <option [value]="option.id">{{ option.labelKey | translate }}</option>
-        }
-      </select>
       <button
         type="button"
-        class="pp-batch-archive"
-        data-testid="pp-batch-quadrant-apply"
-        [disabled]="batchSelection().size === 0 || !batchQuadrantId()"
-        (click)="applyBatchQuadrant()"
+        class="pp-batch-danger"
+        data-testid="pp-batch-delete"
+        [disabled]="batchSelection().size === 0"
+        (click)="deleteBatch()"
       >
-        应用
+        删除
       </button>
+      <div class="pp-batch-quadrant-group">
+        <select
+          data-testid="pp-batch-quadrant"
+          aria-label="批量设置四象限"
+          (change)="onBatchQuadrantChange($event)"
+        >
+          <option value="">四象限…</option>
+          @for (option of quadrantOptions; track option.id) {
+            <option [value]="option.id">{{ option.labelKey | translate }}</option>
+          }
+        </select>
+        <button
+          type="button"
+          class="pp-batch-archive"
+          data-testid="pp-batch-quadrant-apply"
+          [disabled]="batchSelection().size === 0 || !batchQuadrantId()"
+          (click)="applyBatchQuadrant()"
+        >
+          应用
+        </button>
+      </div>
       <button
         type="button"
         class="pp-link"
