@@ -163,11 +163,17 @@ test('memos edit in the original card, preserve identity, switch reminders and r
   await expect
     .poll(() => page.getByTestId('memo-new').evaluate((el) => getComputedStyle(el).color))
     .toBe('rgb(29, 34, 50)');
-  await expect(page.getByRole('menuitem').locator('.nav-label')).toHaveText([
+  const labels = (
+    await page.getByRole('menuitem').locator('.nav-label').allTextContents()
+  ).map((label) => label.trim());
+  expect(labels).toEqual([
+    '搜索',
     '四象限总览',
     '项目进展',
     '常态事项',
     '备忘',
+    '复盘',
+    '快记',
     '归档与回收站',
     '设置',
     '数据备份',
