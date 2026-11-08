@@ -137,3 +137,47 @@ test('batch sets a quadrant for selected projects', async ({ page }) => {
   );
   await expect(quadrant).toContainText('批量四象限');
 });
+
+test('batch works inside a folder and can move projects back out', async ({ page }) => {
+  await gotoProgress(page);
+  await createFolder(page, '批量文件夹内');
+  await createProject(page, '文件夹内项目');
+  await page.getByTestId('pp-batch-toggle').click();
+  await page.getByTestId('pp-batch-checkbox').first().check();
+  await page.getByTestId('pp-batch-folder').selectOption({ label: '批量文件夹内' });
+  await page.getByTestId('pp-batch-move').click();
+
+  await page.getByTestId('pp-folder-card').filter({ hasText: '批量文件夹内' }).click();
+  await expect(
+    page.getByTestId('pp-project-row').filter({ hasText: '文件夹内项目' }),
+  ).toBeVisible();
+  await page.getByTestId('pp-batch-toggle').click();
+  await page.getByTestId('pp-batch-checkbox').first().check();
+  await page.getByTestId('pp-batch-folder').selectOption({ label: '未分组' });
+  await page.getByTestId('pp-batch-move').click();
+
+  await gotoProgress(page);
+  await expect(
+    page.getByTestId('pp-project-row').filter({ hasText: '文件夹内项目' }),
+  ).toBeVisible();
+});
+
+test('batch moves selected projects to the restorable trash', async ({ page }) => {
+  await gotoProgress(page);
+  await createProject(page, '批量删除一');
+  await createProject(page, '批量删除二');
+  await page.getByTestId('pp-batch-toggle').click();
+  const checks = page.getByTestId('pp-batch-checkbox');
+  await checks.nth(0).check();
+  await checks.nth(1).check();
+  page.once('dialog', (dialog) => dialog.accept());
+  await page.getByTestId('pp-batch-delete').click();
+  await expect(page.getByTestId('pp-project-row')).toHaveCount(0);
+
+  await page.goto('/#/personal-archive');
+  await page.reload();
+  await page.getByTestId('pa-page').waitFor({ timeout: 30_000 });
+  await page.getByTestId('pa-trash-tab').click();
+  await expect(page.getByText('批量删除一')).toBeVisible();
+  await expect(page.getByText('批量删除二')).toBeVisible();
+});
