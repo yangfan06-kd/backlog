@@ -423,6 +423,36 @@ export class PersonalProgressPageComponent implements OnInit {
     this.markSaved();
   }
 
+  async deleteBatch(): Promise<void> {
+    const selected = this.batchSelection();
+    if (!selected.size || this.isSaving()) return;
+    if (!(await this._ensureDraftHandled('switch'))) return;
+    if (
+      !window.confirm(
+        `确认将已选 ${selected.size} 个项目移入回收站？之后可在归档与回收站恢复。`,
+      )
+    ) {
+      return;
+    }
+    const rows = this._view().rows.filter((row) => selected.has(row.project.id));
+    for (const row of rows) {
+      const result = await this._run(() =>
+        this._management.trash({
+          operationId: nanoid(),
+          projectId: row.project.id,
+          expectedRevision: row.project.personalProgress?.trash?.revision ?? 0,
+        }),
+      );
+      if (result?.status !== 'persisted') break;
+      this._service.resetRecentUndoForProject(row.project.id);
+    }
+    this._selectedProjectId.set(null);
+    this.newEntryProjectId = null;
+    this.batchSelection.set(new Set());
+    this.selectionMode.set(false);
+    this.markSaved();
+  }
+
   setProjectQuickFilter(quickFilter: 'all' | 'remaining' | 'week' | 'stale'): void {
     this.projectQuickFilter.set(quickFilter);
   }
