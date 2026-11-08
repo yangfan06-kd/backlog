@@ -2,7 +2,7 @@
 
 一个面向 Windows 的本机优先个人项目管理工具，用来整理项目、推进步骤、记录每天实际发生的事，并用四象限总览查看全局。
 
-当前公开试用版：**0.1.0-beta.79（Windows x64）**。
+当前公开试用版：**1.0.0（Windows x64）**。
 
 > 这是试用版，安装包未签名。升级或重装前，请先导出完整备份并关闭应用。
 
@@ -61,8 +61,8 @@
 npm ci
 npm run buildFrontend:prod:es6
 npm run electron:build
-node tools/project1/build-public.cjs 0.1.0-beta.79
-node tools/project1/prepare-delivery.cjs 0.1.0-beta.79
+node tools/project1/build-public.cjs 1.0.0
+node tools/project1/prepare-delivery.cjs 1.0.0
 ```
 
 构建产物、安装包和用户数据不会提交到源码仓库。
