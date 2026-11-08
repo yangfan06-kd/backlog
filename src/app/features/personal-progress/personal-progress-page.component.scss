@@ -131,14 +131,15 @@
 .pp-board-tools {
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: var(--s);
 }
 
 .pp-batch-bar {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--s);
+  column-gap: var(--s2);
+  row-gap: var(--s);
   margin-bottom: var(--s);
   padding: var(--s) var(--s2);
   border: 1px solid var(--separator-color);
@@ -149,7 +150,10 @@
 }
 
 .pp-batch-bar select {
-  min-height: 30px;
+  flex: 0 0 auto;
+  min-width: 110px;
+  max-width: 170px;
+  min-height: 32px;
   padding: 0 var(--s-half);
   border: 1px solid var(--separator-color);
   border-radius: 5px;
@@ -160,7 +164,8 @@
 }
 
 .pp-batch-bar button {
-  min-height: 30px;
+  flex: 0 0 auto;
+  min-height: 32px;
   padding: 0 var(--s);
   border: 0;
   border-radius: 5px;
@@ -169,6 +174,15 @@
   font: inherit;
   font-size: var(--font-size-sm);
   cursor: pointer;
+}
+
+.pp-batch-quadrant-group {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 6px;
+  padding-left: var(--s);
+  border-left: 1px solid var(--separator-color);
 }
 
 .pp-batch-bar button:disabled {
@@ -180,6 +194,12 @@
   border: 1px solid var(--separator-color);
   background: transparent;
   color: var(--text-color);
+}
+
+.pp-batch-bar .pp-batch-danger {
+  border: 1px solid var(--c-red, #c0392b);
+  background: transparent;
+  color: var(--c-red, #c0392b);
 }
 
 .pp-batch-bar .pp-link {
@@ -252,14 +272,14 @@
 }
 
 .pp-project-filter-chip {
-  min-height: 28px;
+  min-height: 32px;
   padding: 0 var(--s);
   border: 1px solid var(--separator-color);
-  border-radius: 14px;
+  border-radius: 16px;
   background: transparent;
   color: var(--text-color-muted);
   font: inherit;
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-sm);
   cursor: pointer;
 }
 
@@ -274,28 +294,28 @@
   align-items: center;
   gap: 4px;
   color: var(--text-color-muted);
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-sm);
 }
 
 .pp-project-filter-quadrant select {
-  min-height: 28px;
+  min-height: 32px;
   padding: 0 var(--s-half);
   border: 1px solid var(--separator-color);
   border-radius: 5px;
   background: var(--bg);
   color: var(--text-color);
   font: inherit;
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-sm);
 }
 
 .pp-project-filter-reset {
-  min-height: 28px;
+  min-height: 32px;
   padding: 0 var(--s-half);
   border: 0;
   background: transparent;
   color: var(--text-color-muted);
   font: inherit;
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-sm);
   cursor: pointer;
 }
 
